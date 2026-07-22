@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { API_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP } from '../utils/spipHelpers'
+import { API_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT } from '../utils/spipHelpers'
 import { ambilUser } from '../utils/auth'
 
 function InputData() {
@@ -8,7 +8,7 @@ function InputData() {
   const [namaPerusahaan, setNamaPerusahaan] = useState("")
   const [jenisSpip, setJenisSpip] = useState(PILIHAN_JENIS_SPIP[0])
   const [namaUnit, setNamaUnit] = useState("")
-  const [jenisAlat, setJenisAlat] = useState("")
+  const [jenisAlat, setJenisAlat] = useState(PILIHAN_JENIS_ALAT[PILIHAN_JENIS_SPIP[0]][0])
   const [nomorUnit, setNomorUnit] = useState("")
   const [tanggalUji, setTanggalUji] = useState("")
   const [jangkaWaktuBulan, setJangkaWaktuBulan] = useState(24)
@@ -18,6 +18,12 @@ function InputData() {
   const [fotoBase64, setFotoBase64] = useState(null)
   const [pdfNama, setPdfNama] = useState("")
   const [pdfData, setPdfData] = useState(null)
+
+  function handleJenisSpipChange(e) {
+    const kategoriBaru = e.target.value
+    setJenisSpip(kategoriBaru)
+    setJenisAlat(PILIHAN_JENIS_ALAT[kategoriBaru][0])
+  }
 
   function handleFotoChange(e) {
     const file = e.target.files[0]
@@ -72,7 +78,7 @@ function InputData() {
     setNamaPerusahaan("")
     setJenisSpip(PILIHAN_JENIS_SPIP[0])
     setNamaUnit("")
-    setJenisAlat("")
+    setJenisAlat(PILIHAN_JENIS_ALAT[PILIHAN_JENIS_SPIP[0]][0])
     setNomorUnit("")
     setTanggalUji("")
     setJangkaWaktuBulan(24)
@@ -110,7 +116,7 @@ function InputData() {
             <label className={labelClass}>Kategori SPIP</label>
             <select
               value={jenisSpip}
-              onChange={(e) => setJenisSpip(e.target.value)}
+              onChange={handleJenisSpipChange}
               className={inputClass}
             >
               {PILIHAN_JENIS_SPIP.map((jenis) => (
@@ -132,13 +138,15 @@ function InputData() {
 
           <div>
             <label className={labelClass}>Jenis Alat</label>
-            <input
-              type="text"
-              placeholder="Contoh: Excavator"
+            <select
               value={jenisAlat}
               onChange={(e) => setJenisAlat(e.target.value)}
               className={inputClass}
-            />
+            >
+              {PILIHAN_JENIS_ALAT[jenisSpip].map((alat) => (
+                <option key={alat} value={alat}>{alat}</option>
+              ))}
+            </select>
           </div>
 
           <div>

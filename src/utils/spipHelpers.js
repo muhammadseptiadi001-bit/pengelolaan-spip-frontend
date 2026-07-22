@@ -10,6 +10,82 @@ export const PILIHAN_JANGKA_WAKTU = [
 
 export const PILIHAN_JENIS_SPIP = ["Sarana", "Prasarana", "Instalasi", "Peralatan Pertambangan"]
 
+export const PILIHAN_JENIS_ALAT = {
+  "Sarana": [
+    "Light Vehicle (LV)",
+    "Manhaul (Bus)",
+    "Lowboy (pengangkut alat berat)",
+    "Kendaraan operasional",
+    "Ambulance",
+    "Kendaraan tanggap darurat",
+    "Peralatan komunikasi (Handy Talky/Radio)",
+    "Peralatan keselamatan kerja (APD)",
+    "Peralatan tanggap darurat",
+    "Peralatan kerja portabel",
+  ],
+  "Prasarana": [
+    "Bangunan kantor",
+    "Bengkel (Workshop)",
+    "Gudang penyimpanan (Warehouse)",
+    "Bangunan genset",
+    "Bangunan tempat pembuangan sampah",
+    "Tangki timbun",
+    "Bangunan tempat ibadah",
+    "Bangunan klinik",
+    "Mess (Camp) dan bangunan pendukung",
+    "Ruang kendali (Control Room)",
+    "Jalan tambang (Haul Road)",
+    "Jembatan",
+    "Drainase",
+    "Menara telekomunikasi",
+    "Menara penyalur petir",
+    "Fuel Station",
+    "Washing Plant",
+    "Stockpile",
+    "Kolam pengendap (Settling Pond)",
+    "Kolam pengelolaan air limbah",
+    "Pelabuhan/Jetty",
+    "Fasilitas air bersih dan sanitasi",
+  ],
+  "Instalasi": [
+    "Instalasi ban berjalan (Conveyor System)",
+    "Instalasi listrik",
+    "Instalasi pneumatic dan/atau hydraulic",
+    "Instalasi bahan bakar cair (Fuel Station, tangki BBM, jaringan perpipaan)",
+    "Instalasi air",
+    "Instalasi komunikasi",
+    "Instalasi proteksi kebakaran",
+    "Instalasi gas",
+    "Instalasi pengolahan air limbah (IPAL)",
+    "Instalasi pengolahan dan/atau pemurnian",
+    "Sistem perpompaan dan perpipaan (Pumping & Piping System)",
+    "Sistem ventilasi (khusus tambang bawah tanah)",
+    "Crusher beserta sistem instalasinya",
+  ],
+  "Peralatan Pertambangan": [
+    "Excavator",
+    "Bulldozer",
+    "Wheel Loader",
+    "Motor Grader",
+    "Dump Truck",
+    "High Dump (HD)",
+    "Compact",
+    "Alat penunjang pertambangan",
+    "Alat pemetaan dan pemantauan kestabilan lereng",
+    "Alat bor (Drill Rig)",
+    "Crane",
+    "Compressor",
+    "Genset",
+    "Pompa",
+    "Pesawat angkat dan/atau angkut (Lifting Equipment)",
+    "Peralatan perkakas tangan (Hand Tools)",
+    "Peralatan listrik",
+    "Peralatan mekanik",
+  ],
+}
+
+export const SEMUA_JENIS_ALAT = Object.values(PILIHAN_JENIS_ALAT).flat()
+
 export function hitungJatuhTempo(tanggalUjiTerakhir, bulan) {
   const tanggal = new Date(tanggalUjiTerakhir)
   tanggal.setMonth(tanggal.getMonth() + Number(bulan))

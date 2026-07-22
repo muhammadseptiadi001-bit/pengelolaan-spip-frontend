@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import * as XLSX from 'xlsx'
 import {
-  API_URL, PILIHAN_JENIS_SPIP,
+  API_URL, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT, SEMUA_JENIS_ALAT,
   hitungJatuhTempo, hitungStatusWaktu, hitungSisaDetail, warnaKelayakan, formatTanggal
 } from '../utils/spipHelpers'
 
@@ -13,7 +13,7 @@ function DataSPIP() {
     perusahaan: "",
     jenisSpip: "Semua",
     namaUnit: "",
-    jenisAlat: "",
+    jenisAlat: "Semua",
     nomorUnit: "",
     statusWaktu: "Semua",
     statusKelayakan: "Semua",
@@ -32,6 +32,14 @@ function DataSPIP() {
   function updateFilter(kolom, nilai) {
     setFilter((prev) => ({ ...prev, [kolom]: nilai }))
   }
+
+  function updateFilterJenisSpip(kategoriBaru) {
+    setFilter((prev) => ({ ...prev, jenisSpip: kategoriBaru, jenisAlat: "Semua" }))
+  }
+
+  const pilihanJenisAlatFilter = filter.jenisSpip === "Semua"
+    ? SEMUA_JENIS_ALAT
+    : PILIHAN_JENIS_ALAT[filter.jenisSpip]
 
   async function updateStatusKelayakan(unit, statusBaru) {
     try {
@@ -87,7 +95,7 @@ function DataSPIP() {
       const cocokPerusahaan = unit.namaPerusahaan?.toLowerCase().includes(filter.perusahaan.toLowerCase())
       const cocokJenisSpip = filter.jenisSpip === "Semua" || unit.jenisSpip === filter.jenisSpip
       const cocokNamaUnit = unit.namaUnit?.toLowerCase().includes(filter.namaUnit.toLowerCase())
-      const cocokJenisAlat = unit.jenisAlat?.toLowerCase().includes(filter.jenisAlat.toLowerCase())
+      const cocokJenisAlat = filter.jenisAlat === "Semua" || unit.jenisAlat === filter.jenisAlat
       const cocokNomorUnit = unit.nomorUnit?.toLowerCase().includes(filter.nomorUnit.toLowerCase())
       const cocokStatusWaktu = filter.statusWaktu === "Semua" || statusWaktuUnit === filter.statusWaktu
       const cocokStatusKelayakan = filter.statusKelayakan === "Semua" || unit.statusKelayakan === filter.statusKelayakan
@@ -168,7 +176,7 @@ function DataSPIP() {
                     className={filterInputClass} />
                 </th>
                 <th className="py-2 pr-3">
-                  <select value={filter.jenisSpip} onChange={(e) => updateFilter("jenisSpip", e.target.value)}
+                  <select value={filter.jenisSpip} onChange={(e) => updateFilterJenisSpip(e.target.value)}
                     className={filterInputClass}>
                     <option value="Semua">Semua</option>
                     {PILIHAN_JENIS_SPIP.map((jenis) => (
@@ -182,9 +190,13 @@ function DataSPIP() {
                     className={filterInputClass} />
                 </th>
                 <th className="py-2 pr-3">
-                  <input type="text" placeholder="Cari..." value={filter.jenisAlat}
-                    onChange={(e) => updateFilter("jenisAlat", e.target.value)}
-                    className={filterInputClass} />
+                  <select value={filter.jenisAlat} onChange={(e) => updateFilter("jenisAlat", e.target.value)}
+                    className={filterInputClass}>
+                    <option value="Semua">Semua</option>
+                    {pilihanJenisAlatFilter.map((alat) => (
+                      <option key={alat} value={alat}>{alat}</option>
+                    ))}
+                  </select>
                 </th>
                 <th className="py-2 pr-3">
                   <input type="text" placeholder="Cari..." value={filter.nomorUnit}
