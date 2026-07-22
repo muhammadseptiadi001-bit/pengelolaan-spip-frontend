@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import * as XLSX from 'xlsx'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
-const API_URL = "http://localhost:3000/api/unit"
+const API_URL = "https://pengelolaan-spip-backend-production.up.railway.app/api/unit"
 
 const PILIHAN_JANGKA_WAKTU = [
   { label: "5 Tahun", bulan: 60 },

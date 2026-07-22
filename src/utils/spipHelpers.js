@@ -1,4 +1,4 @@
-export const API_URL = "http://localhost:3000/api/unit"
+export const API_URL = "https://pengelolaan-spip-backend-production.up.railway.app/api/unit"
 
 export const PILIHAN_JANGKA_WAKTU = [
   { label: "5 Tahun", bulan: 60 },
