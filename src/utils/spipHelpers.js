@@ -8,7 +8,7 @@ export const PILIHAN_JANGKA_WAKTU = [
   { label: "3 Bulan", bulan: 3 },
 ]
 
-export const PILIHAN_JENIS_SPIP = ["Sarana Prasarana", "Instalasi", "Peralatan Pertambangan"]
+export const PILIHAN_JENIS_SPIP = ["Sarana", "Prasarana", "Instalasi", "Peralatan Pertambangan"]
 
 export function hitungJatuhTempo(tanggalUjiTerakhir, bulan) {
   const tanggal = new Date(tanggalUjiTerakhir)
