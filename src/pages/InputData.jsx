@@ -107,7 +107,7 @@ function InputData() {
           </div>
 
           <div>
-            <label className={labelClass}>Jenis SPIP</label>
+            <label className={labelClass}>Kategori SPIP</label>
             <select
               value={jenisSpip}
               onChange={(e) => setJenisSpip(e.target.value)}

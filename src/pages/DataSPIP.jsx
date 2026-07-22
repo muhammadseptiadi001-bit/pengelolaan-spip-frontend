@@ -101,7 +101,7 @@ function DataSPIP() {
       const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
       return {
         "Nama Perusahaan": unit.namaPerusahaan,
-        "Jenis SPIP": unit.jenisSpip,
+        "Kategori SPIP": unit.jenisSpip,
         "Nama Unit": unit.namaUnit,
         "Jenis Alat": unit.jenisAlat,
         "Nomor Unit": unit.nomorUnit,
@@ -146,7 +146,7 @@ function DataSPIP() {
             <thead>
               <tr className="border-b border-gray-300 dark:border-gray-700">
                 <th className="py-2 pr-3 text-gray-800 dark:text-white">Perusahaan</th>
-                <th className="py-2 pr-3 text-gray-800 dark:text-white">Jenis SPIP</th>
+                <th className="py-2 pr-3 text-gray-800 dark:text-white">Kategori SPIP</th>
                 <th className="py-2 pr-3 text-gray-800 dark:text-white">Nama Unit</th>
                 <th className="py-2 pr-3 text-gray-800 dark:text-white">Jenis Alat</th>
                 <th className="py-2 pr-3 text-gray-800 dark:text-white">Nomor Unit</th>

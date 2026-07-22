@@ -87,7 +87,7 @@ function Dashboard() {
 
         <div className="flex flex-col md:flex-row gap-4 md:items-end">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter Jenis SPIP</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter Kategori SPIP</label>
             <select
               value={filterJenisSpip}
               onChange={(e) => setFilterJenisSpip(e.target.value)}
@@ -171,7 +171,7 @@ function Dashboard() {
         </div>
 
         <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800 md:col-span-2">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Jumlah Unit per Jenis SPIP</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Jumlah Unit per Kategori SPIP</h2>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={dataPerJenisSpip}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
