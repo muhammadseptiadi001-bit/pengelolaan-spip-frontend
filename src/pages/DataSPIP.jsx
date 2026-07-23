@@ -5,6 +5,7 @@ import {
   hitungJatuhTempo, hitungStatusWaktu, hitungSisaDetail, warnaKelayakan, formatTanggal
 } from '../utils/spipHelpers'
 import { tampilkanToast } from '../utils/toast'
+import { apiFetch } from '../utils/apiFetch'
 
 const ITEM_PER_HALAMAN = 10
 
@@ -32,9 +33,13 @@ function DataSPIP() {
   }, [filter])
 
   async function ambilData() {
-    const response = await fetch(API_URL)
-    const data = await response.json()
-    setDaftarUnit(data)
+    try {
+      const response = await apiFetch(API_URL)
+      const data = await response.json()
+      setDaftarUnit(data)
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   function updateFilter(kolom, nilai) {
@@ -51,7 +56,7 @@ function DataSPIP() {
 
   async function updateStatusKelayakan(unit, statusBaru) {
     try {
-      const res = await fetch(`${API_URL}/${unit.id}`, {
+      const res = await apiFetch(`${API_URL}/${unit.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ statusKelayakan: statusBaru, tindakLanjut: unit.tindakLanjut || "" }),
@@ -66,7 +71,7 @@ function DataSPIP() {
 
   async function updateTindakLanjut(unit, tindakLanjutBaru) {
     try {
-      const res = await fetch(`${API_URL}/${unit.id}`, {
+      const res = await apiFetch(`${API_URL}/${unit.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ statusKelayakan: unit.statusKelayakan, tindakLanjut: tindakLanjutBaru }),
@@ -86,7 +91,7 @@ function DataSPIP() {
     if (!konfirmasi) return
 
     try {
-      const res = await fetch(`${API_URL}/${unit.id}`, { method: "DELETE" })
+      const res = await apiFetch(`${API_URL}/${unit.id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Gagal menghapus")
       tampilkanToast("Unit berhasil dihapus.", "sukses")
       ambilData()
