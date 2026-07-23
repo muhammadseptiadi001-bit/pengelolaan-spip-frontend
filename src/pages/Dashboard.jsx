@@ -7,7 +7,6 @@ import { API_URL, PILIHAN_JENIS_SPIP, hitungJatuhTempo, hitungStatusWaktu } from
 const WARNA_KELAYAKAN = { "Layak": "#22c55e", "Tidak Layak": "#ef4444", "Layak Dengan Catatan": "#eab308" }
 const WARNA_WAKTU = { "Aman": "#22c55e", "Mendekati Jatuh Tempo": "#eab308", "Sudah Lewat": "#ef4444" }
 
-// Komponen angka dengan efek count-up
 function AngkaCountUp({ nilai, durasi = 800 }) {
   const [tampil, setTampil] = useState(0)
 
@@ -33,13 +32,30 @@ function AngkaCountUp({ nilai, durasi = 800 }) {
   return <>{tampil}</>
 }
 
-// Tooltip custom untuk grafik recharts
 function TooltipKustom({ active, payload, label }) {
   if (!active || !payload || !payload.length) return null
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2 text-sm">
       <p className="font-semibold text-gray-800 dark:text-white">{label}</p>
       <p className="text-gray-600 dark:text-gray-300">Jumlah: {payload[0].value}</p>
+    </div>
+  )
+}
+
+function SkeletonKartu() {
+  return (
+    <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800 animate-pulse">
+      <div className="h-3 w-20 bg-gray-200 dark:bg-gray-800 rounded mb-3"></div>
+      <div className="h-7 w-12 bg-gray-200 dark:bg-gray-800 rounded"></div>
+    </div>
+  )
+}
+
+function SkeletonGrafik({ tinggi = 260 }) {
+  return (
+    <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800 animate-pulse">
+      <div className="h-5 w-40 bg-gray-200 dark:bg-gray-800 rounded mb-4"></div>
+      <div style={{ height: tinggi }} className="bg-gray-100 dark:bg-gray-800 rounded"></div>
     </div>
   )
 }
@@ -58,6 +74,7 @@ const varianKartu = {
 
 function Dashboard() {
   const [daftarUnit, setDaftarUnit] = useState([])
+  const [sedangMuat, setSedangMuat] = useState(true)
   const [filterJenisSpip, setFilterJenisSpip] = useState("Semua")
   const [statusKirim, setStatusKirim] = useState("")
   const [sedangKirim, setSedangKirim] = useState(false)
@@ -67,9 +84,13 @@ function Dashboard() {
   }, [])
 
   async function ambilData() {
-    const response = await fetch(API_URL)
-    const data = await response.json()
-    setDaftarUnit(data)
+    try {
+      const response = await fetch(API_URL)
+      const data = await response.json()
+      setDaftarUnit(data)
+    } finally {
+      setSedangMuat(false)
+    }
   }
 
   async function tesKirimNotifikasi() {
@@ -158,14 +179,16 @@ function Dashboard() {
             </select>
           </div>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             onClick={tesKirimNotifikasi}
             disabled={sedangKirim}
             className="bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-200 text-gray-900 px-4 py-2 rounded font-semibold h-fit flex items-center gap-2"
           >
             <Send size={16} />
             {sedangKirim ? "Mengirim..." : "Tes Kirim Notifikasi Email"}
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -179,97 +202,118 @@ function Dashboard() {
         </motion.div>
       )}
 
-      <motion.div
-        variants={varianKontainer}
-        initial="tersembunyi"
-        animate="tampil"
-        className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
-      >
-        {kartuRingkasan.map((kartu) => {
-          const Icon = kartu.icon
-          return (
-            <motion.div
-              key={kartu.label}
-              variants={varianKartu}
-              className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800 flex items-start justify-between"
-            >
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{kartu.label}</p>
-                <p className={`text-2xl font-bold ${kartu.warna}`}>
-                  <AngkaCountUp nilai={kartu.nilai} />
-                </p>
-              </div>
-              <div className={`p-2 rounded-lg ${kartu.bgIkon}`}>
-                <Icon size={20} className={kartu.warna} />
-              </div>
-            </motion.div>
-          )
-        })}
-      </motion.div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {sedangMuat ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <SkeletonKartu />
+          <SkeletonKartu />
+          <SkeletonKartu />
+          <SkeletonKartu />
+        </div>
+      ) : (
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow dark:shadow-none dark:border dark:border-gray-800"
+          variants={varianKontainer}
+          initial="tersembunyi"
+          animate="tampil"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
         >
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Status Kelayakan</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={dataStatusKelayakan}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
-              <XAxis dataKey="nama" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} />
-              <Tooltip content={<TooltipKustom />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
-              <Bar dataKey="jumlah" radius={[4, 4, 0, 0]}>
-                {dataStatusKelayakan.map((entry, index) => (
-                  <Cell key={index} fill={WARNA_KELAYAKAN[entry.nama]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {kartuRingkasan.map((kartu) => {
+            const Icon = kartu.icon
+            return (
+              <motion.div
+                key={kartu.label}
+                variants={varianKartu}
+                whileHover={{ scale: 1.02, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)" }}
+                className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800 flex items-start justify-between transition-shadow"
+              >
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{kartu.label}</p>
+                  <p className={`text-2xl font-bold ${kartu.warna}`}>
+                    <AngkaCountUp nilai={kartu.nilai} />
+                  </p>
+                </div>
+                <div className={`p-2 rounded-lg ${kartu.bgIkon}`}>
+                  <Icon size={20} className={kartu.warna} />
+                </div>
+              </motion.div>
+            )
+          })}
         </motion.div>
+      )}
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-          className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow dark:shadow-none dark:border dark:border-gray-800"
-        >
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Status Waktu Uji</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={dataStatusWaktu}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
-              <XAxis dataKey="nama" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} />
-              <Tooltip content={<TooltipKustom />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
-              <Bar dataKey="jumlah" radius={[4, 4, 0, 0]}>
-                {dataStatusWaktu.map((entry, index) => (
-                  <Cell key={index} fill={WARNA_WAKTU[entry.nama]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
+      {sedangMuat ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <SkeletonGrafik />
+          <SkeletonGrafik />
+          <div className="md:col-span-2"><SkeletonGrafik /></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.01 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow dark:shadow-none dark:border dark:border-gray-800"
+          >
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Status Kelayakan</h2>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={dataStatusKelayakan}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
+                <XAxis dataKey="nama" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip content={<TooltipKustom />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+                <Bar dataKey="jumlah" radius={[4, 4, 0, 0]}>
+                  {dataStatusKelayakan.map((entry, index) => (
+                    <Cell key={index} fill={WARNA_KELAYAKAN[entry.nama]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-          className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow dark:shadow-none dark:border dark:border-gray-800 md:col-span-2"
-        >
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Jumlah Unit per Kategori SPIP</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={dataPerJenisSpip}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
-              <XAxis dataKey="nama" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} />
-              <Tooltip content={<TooltipKustom />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
-              <Bar dataKey="jumlah" fill="#eab308" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-      </div>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.01 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow dark:shadow-none dark:border dark:border-gray-800"
+          >
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Status Waktu Uji</h2>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={dataStatusWaktu}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
+                <XAxis dataKey="nama" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip content={<TooltipKustom />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+                <Bar dataKey="jumlah" radius={[4, 4, 0, 0]}>
+                  {dataStatusWaktu.map((entry, index) => (
+                    <Cell key={index} fill={WARNA_WAKTU[entry.nama]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.005 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow dark:shadow-none dark:border dark:border-gray-800 md:col-span-2"
+          >
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Jumlah Unit per Kategori SPIP</h2>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={dataPerJenisSpip}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
+                <XAxis dataKey="nama" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip content={<TooltipKustom />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+                <Bar dataKey="jumlah" fill="#eab308" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }
