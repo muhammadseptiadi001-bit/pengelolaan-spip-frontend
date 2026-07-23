@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { API_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT } from '../utils/spipHelpers'
 import { ambilUser } from '../utils/auth'
 import { tampilkanToast } from '../utils/toast'
+import { apiFetch } from '../utils/apiFetch'
 
 function InputData() {
   const user = ambilUser()
@@ -71,7 +72,7 @@ function InputData() {
 
     setSedangSimpan(true)
     try {
-      const res = await fetch(API_URL, {
+      const res = await apiFetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(unitBaru),
