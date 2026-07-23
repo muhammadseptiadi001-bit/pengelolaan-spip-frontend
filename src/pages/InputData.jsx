@@ -1,6 +1,39 @@
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { CheckCircle2, XCircle, FileText } from 'lucide-react'
 import { API_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT } from '../utils/spipHelpers'
 import { ambilUser } from '../utils/auth'
+
+// Komponen Toast Notification
+function Toast({ toast, onClose }) {
+  return (
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: -40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -40 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md"
+        >
+          <div className={`
+            flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border
+            ${toast.tipe === "sukses"
+              ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200"
+              : "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
+            }
+          `}>
+            {toast.tipe === "sukses" ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
+            <p className="text-sm font-medium flex-1">{toast.pesan}</p>
+            <button onClick={onClose} className="text-current opacity-60 hover:opacity-100">
+              <XCircle size={16} />
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
 
 function InputData() {
   const user = ambilUser()
@@ -18,6 +51,12 @@ function InputData() {
   const [fotoBase64, setFotoBase64] = useState(null)
   const [pdfNama, setPdfNama] = useState("")
   const [pdfData, setPdfData] = useState(null)
+  const [toast, setToast] = useState(null)
+
+  function tampilkanToast(pesan, tipe = "sukses") {
+    setToast({ pesan, tipe })
+    setTimeout(() => setToast(null), 3000)
+  }
 
   function handleJenisSpipChange(e) {
     const kategoriBaru = e.target.value
@@ -46,7 +85,7 @@ function InputData() {
 
   async function tambahUnit() {
     if (namaUnit === "" || jenisAlat === "" || nomorUnit === "" || tanggalUji === "" || namaPerusahaan === "") {
-      alert("Kolom Nama Perusahaan, Nama Unit, Jenis Alat, Nomor Unit, dan Tanggal Uji wajib diisi!")
+      tampilkanToast("Kolom Nama Perusahaan, Nama Unit, Jenis Alat, Nomor Unit, dan Tanggal Uji wajib diisi!", "gagal")
       return
     }
 
@@ -67,27 +106,34 @@ function InputData() {
       dibuatOleh: user?.nama || "Tidak diketahui",
     }
 
-    await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(unitBaru),
-    })
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(unitBaru),
+      })
 
-    alert("Unit berhasil ditambahkan!")
+      if (!res.ok) throw new Error("Gagal menyimpan data")
 
-    setNamaPerusahaan("")
-    setJenisSpip(PILIHAN_JENIS_SPIP[0])
-    setNamaUnit("")
-    setJenisAlat(PILIHAN_JENIS_ALAT[PILIHAN_JENIS_SPIP[0]][0])
-    setNomorUnit("")
-    setTanggalUji("")
-    setJangkaWaktuBulan(24)
-    setStatusKelayakan("Layak")
-    setTemuan("")
-    setTindakLanjut("")
-    setFotoBase64(null)
-    setPdfNama("")
-    setPdfData(null)
+      tampilkanToast("Unit berhasil ditambahkan!", "sukses")
+
+      setNamaPerusahaan("")
+      setJenisSpip(PILIHAN_JENIS_SPIP[0])
+      setNamaUnit("")
+      setJenisAlat(PILIHAN_JENIS_ALAT[PILIHAN_JENIS_SPIP[0]][0])
+      setNomorUnit("")
+      setTanggalUji("")
+      setJangkaWaktuBulan(24)
+      setStatusKelayakan("Layak")
+      setTemuan("")
+      setTindakLanjut("")
+      setFotoBase64(null)
+      setPdfNama("")
+      setPdfData(null)
+    } catch (err) {
+      tampilkanToast("Gagal menambahkan unit. Pastikan server backend sedang berjalan.", "gagal")
+      console.error(err)
+    }
   }
 
   const inputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded px-3 py-2"
@@ -95,6 +141,8 @@ function InputData() {
 
   return (
     <div>
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Input Data</h1>
 
       <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800">
@@ -138,15 +186,25 @@ function InputData() {
 
           <div>
             <label className={labelClass}>Jenis Alat</label>
-            <select
-              value={jenisAlat}
-              onChange={(e) => setJenisAlat(e.target.value)}
-              className={inputClass}
-            >
-              {PILIHAN_JENIS_ALAT[jenisSpip].map((alat) => (
-                <option key={alat} value={alat}>{alat}</option>
-              ))}
-            </select>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={jenisSpip}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <select
+                  value={jenisAlat}
+                  onChange={(e) => setJenisAlat(e.target.value)}
+                  className={inputClass}
+                >
+                  {PILIHAN_JENIS_ALAT[jenisSpip].map((alat) => (
+                    <option key={alat} value={alat}>{alat}</option>
+                  ))}
+                </select>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           <div>
@@ -239,16 +297,22 @@ function InputData() {
               onChange={handlePdfChange}
               className={`${inputClass} dark:file:text-white`}
             />
-            {pdfNama && <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">📄 {pdfNama}</p>}
+            {pdfNama && (
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                <FileText size={14} /> {pdfNama}
+              </p>
+            )}
           </div>
         </div>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           onClick={tambahUnit}
           className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-4 py-2 rounded font-semibold"
         >
           Tambah Unit
-        </button>
+        </motion.button>
       </div>
     </div>
   )
