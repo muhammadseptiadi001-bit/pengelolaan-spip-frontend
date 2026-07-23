@@ -1,9 +1,27 @@
 import { useState, useEffect, useMemo } from 'react'
+import { motion } from 'framer-motion'
 import * as XLSX from 'xlsx'
+import {
+  Download, CheckCircle2, XCircle, AlertCircle, Clock, ImageIcon, FileText, Trash2
+} from 'lucide-react'
 import {
   API_URL, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT, SEMUA_JENIS_ALAT,
   hitungJatuhTempo, hitungStatusWaktu, hitungSisaDetail, warnaKelayakan, formatTanggal
 } from '../utils/spipHelpers'
+
+// Ikon untuk status waktu uji
+function ikonStatusWaktu(label) {
+  if (label === "Aman") return <CheckCircle2 size={14} />
+  if (label === "Mendekati Jatuh Tempo") return <Clock size={14} />
+  return <XCircle size={14} />
+}
+
+// Ikon untuk status kelayakan
+function ikonStatusKelayakan(status) {
+  if (status === "Layak") return <CheckCircle2 size={16} className="text-green-600 dark:text-green-400" />
+  if (status === "Tidak Layak") return <XCircle size={16} className="text-red-600 dark:text-red-400" />
+  return <AlertCircle size={16} className="text-yellow-600 dark:text-yellow-400" />
+}
 
 function DataSPIP() {
   const [daftarUnit, setDaftarUnit] = useState([])
@@ -141,9 +159,9 @@ function DataSPIP() {
 
           <button
             onClick={exportExcel}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold flex items-center gap-2"
           >
-            ⬇️ Download Excel
+            <Download size={16} /> Download Excel
           </button>
         </div>
 
@@ -237,12 +255,18 @@ function DataSPIP() {
                   <td colSpan="15" className="py-4 text-center text-gray-500 dark:text-gray-400">Tidak ada data yang cocok dengan filter.</td>
                 </tr>
               ) : (
-                dataTerfilter.map((unit) => {
+                dataTerfilter.map((unit, index) => {
                   const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
                   const statusWaktu = hitungStatusWaktu(jatuhTempo)
 
                   return (
-                    <tr key={unit.id} className="border-b border-gray-200 dark:border-gray-800 align-top text-gray-800 dark:text-gray-200">
+                    <motion.tr
+                      key={unit.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.6) }}
+                      className="border-b border-gray-200 dark:border-gray-800 align-top text-gray-800 dark:text-gray-200"
+                    >
                       <td className="py-2 pr-3">{unit.namaPerusahaan}</td>
                       <td className="py-2 pr-3">{unit.jenisSpip}</td>
                       <td className="py-2 pr-3">{unit.namaUnit}</td>
@@ -252,18 +276,24 @@ function DataSPIP() {
                       <td className="py-2 pr-3">{formatTanggal(jatuhTempo)}</td>
                       <td className="py-2 pr-3">{hitungSisaDetail(jatuhTempo)}</td>
                       <td className="py-2 pr-3">
-                        <span className={`px-2 py-1 rounded text-sm font-medium ${statusWaktu.warna}`}>{statusWaktu.label}</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-medium ${statusWaktu.warna}`}>
+                          {ikonStatusWaktu(statusWaktu.label)}
+                          {statusWaktu.label}
+                        </span>
                       </td>
                       <td className="py-2 pr-3">
-                        <select
-                          value={unit.statusKelayakan}
-                          onChange={(e) => updateStatusKelayakan(unit, e.target.value)}
-                          className={`px-2 py-1 rounded text-sm font-medium border-0 ${warnaKelayakan(unit.statusKelayakan)}`}
-                        >
-                          <option value="Layak">Layak</option>
-                          <option value="Tidak Layak">Tidak Layak</option>
-                          <option value="Layak Dengan Catatan">Layak Dengan Catatan</option>
-                        </select>
+                        <div className="flex items-center gap-1">
+                          {ikonStatusKelayakan(unit.statusKelayakan)}
+                          <select
+                            value={unit.statusKelayakan}
+                            onChange={(e) => updateStatusKelayakan(unit, e.target.value)}
+                            className={`px-2 py-1 rounded text-sm font-medium border-0 ${warnaKelayakan(unit.statusKelayakan)}`}
+                          >
+                            <option value="Layak">Layak</option>
+                            <option value="Tidak Layak">Tidak Layak</option>
+                            <option value="Layak Dengan Catatan">Layak Dengan Catatan</option>
+                          </select>
+                        </div>
                       </td>
                       <td className="py-2 pr-3 max-w-xs">{unit.temuan ? unit.temuan : <span className="text-gray-400 dark:text-gray-500">-</span>}</td>
                       <td className="py-2 pr-3 min-w-[220px]">
@@ -277,23 +307,29 @@ function DataSPIP() {
                       </td>
                       <td className="py-2 pr-3">
                         {unit.foto ? (
-                          <span onClick={() => setFotoDipilih(unit.foto)} className="text-2xl cursor-pointer">🖼️</span>
+                          <button onClick={() => setFotoDipilih(unit.foto)} className="text-gray-600 dark:text-gray-300 hover:text-yellow-500">
+                            <ImageIcon size={20} />
+                          </button>
                         ) : <span className="text-gray-400 dark:text-gray-500">-</span>}
                       </td>
                       <td className="py-2 pr-3">
                         {unit.pdfData ? (
-                          <a href={unit.pdfData} download={unit.pdfNama} className="text-2xl" title={unit.pdfNama}>📄</a>
+                          <a href={unit.pdfData} download={unit.pdfNama} title={unit.pdfNama} className="text-gray-600 dark:text-gray-300 hover:text-yellow-500 inline-block">
+                            <FileText size={20} />
+                          </a>
                         ) : <span className="text-gray-400 dark:text-gray-500">-</span>}
                       </td>
                       <td className="py-2 pr-3">
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.08 }}
+                          whileTap={{ scale: 0.95 }}
                           onClick={() => hapusUnit(unit)}
-                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium"
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium flex items-center gap-1"
                         >
-                          🗑️ Hapus
-                        </button>
+                          <Trash2 size={14} /> Hapus
+                        </motion.button>
                       </td>
-                    </tr>
+                    </motion.tr>
                   )
                 })
               )}
