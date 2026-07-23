@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, LabelList } from 'recharts'
 import { Boxes, CheckCircle2, AlertTriangle, XCircle, Send } from 'lucide-react'
 import { API_URL, PILIHAN_JENIS_SPIP, hitungJatuhTempo, hitungStatusWaktu } from '../utils/spipHelpers'
 
@@ -266,6 +266,7 @@ function Dashboard() {
                   {dataStatusKelayakan.map((entry, index) => (
                     <Cell key={index} fill={WARNA_KELAYAKAN[entry.nama]} />
                   ))}
+                  <LabelList dataKey="jumlah" position="top" style={{ fill: '#374151', fontSize: 12, fontWeight: 600 }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -289,6 +290,7 @@ function Dashboard() {
                   {dataStatusWaktu.map((entry, index) => (
                     <Cell key={index} fill={WARNA_WAKTU[entry.nama]} />
                   ))}
+                  <LabelList dataKey="jumlah" position="top" style={{ fill: '#374151', fontSize: 12, fontWeight: 600 }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -308,7 +310,9 @@ function Dashboard() {
                 <XAxis dataKey="nama" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} />
                 <Tooltip content={<TooltipKustom />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
-                <Bar dataKey="jumlah" fill="#eab308" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="jumlah" fill="#eab308" radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="jumlah" position="top" style={{ fill: '#374151', fontSize: 12, fontWeight: 600 }} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </motion.div>
