@@ -72,18 +72,13 @@ function Sidebar() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar - versi mobile pakai motion, desktop tetap statis */}
-      <motion.div
-        initial={false}
-        animate={{ x: menuTerbuka ? 0 : "-100%" }}
-        transition={{ type: "tween", duration: 0.25, ease: "easeInOut" }}
-        className="
-          w-56 bg-gray-900 min-h-screen p-4 flex-shrink-0 flex flex-col border-r-2 border-yellow-400
-          fixed md:sticky top-0 left-0 h-screen z-40
-          md:!translate-x-0
-        "
-        style={{ willChange: "transform" }}
-      >
+      {/* Sidebar */}
+      <div className={`
+        w-56 bg-gray-900 min-h-screen p-4 flex-shrink-0 flex flex-col border-r-2 border-yellow-400
+        fixed md:sticky top-0 left-0 h-screen z-40
+        transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
+        ${menuTerbuka ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
+      `}>
         <div className="hidden md:flex flex-col items-center mb-6 pb-4 border-b border-gray-700">
           <img src={logoEsdm} alt="Logo ESDM" className="w-12 h-12 object-contain mb-2" />
           <h1 className="text-white text-sm font-bold text-center">Pengelolaan SPIP</h1>
@@ -134,7 +129,7 @@ function Sidebar() {
             <LogOut size={16} /> Logout
           </button>
         </div>
-      </motion.div>
+      </div>
     </>
   )
 }
