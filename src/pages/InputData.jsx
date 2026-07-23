@@ -1,8 +1,23 @@
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  FileText, PackagePlus, Building2, Tags, Wrench, Hash,
+  CalendarDays, Timer, ShieldCheck, ClipboardList, Wrench as WrenchAlt,
+  ImagePlus, FileUp
+} from 'lucide-react'
 import { API_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT } from '../utils/spipHelpers'
 import { ambilUser } from '../utils/auth'
 import { tampilkanToast } from '../utils/toast'
 import { apiFetch } from '../utils/apiFetch'
+
+function LabelIkon({ icon: Icon, children }) {
+  return (
+    <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <Icon size={14} className="text-yellow-500" />
+      {children}
+    </label>
+  )
+}
 
 function InputData() {
   const user = ambilUser()
@@ -102,18 +117,22 @@ function InputData() {
   }
 
   const inputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded px-3 py-2"
-  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Input Data</h1>
 
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800"
+      >
         <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Tambah Unit Alat</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className={labelClass}>Nama Perusahaan</label>
+            <LabelIkon icon={Building2}>Nama Perusahaan</LabelIkon>
             <input
               type="text"
               placeholder="Nama Perusahaan Anda"
@@ -124,7 +143,7 @@ function InputData() {
           </div>
 
           <div>
-            <label className={labelClass}>Kategori SPIP</label>
+            <LabelIkon icon={Tags}>Kategori SPIP</LabelIkon>
             <select
               value={jenisSpip}
               onChange={handleJenisSpipChange}
@@ -137,7 +156,7 @@ function InputData() {
           </div>
 
           <div>
-            <label className={labelClass}>Nama/Model Unit</label>
+            <LabelIkon icon={Wrench}>Nama/Model Unit</LabelIkon>
             <input
               type="text"
               placeholder="Contoh: PC200"
@@ -148,20 +167,30 @@ function InputData() {
           </div>
 
           <div>
-            <label className={labelClass}>Jenis Alat</label>
-            <select
-              value={jenisAlat}
-              onChange={(e) => setJenisAlat(e.target.value)}
-              className={inputClass}
-            >
-              {PILIHAN_JENIS_ALAT[jenisSpip].map((alat) => (
-                <option key={alat} value={alat}>{alat}</option>
-              ))}
-            </select>
+            <LabelIkon icon={WrenchAlt}>Jenis Alat</LabelIkon>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={jenisSpip}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <select
+                  value={jenisAlat}
+                  onChange={(e) => setJenisAlat(e.target.value)}
+                  className={inputClass}
+                >
+                  {PILIHAN_JENIS_ALAT[jenisSpip].map((alat) => (
+                    <option key={alat} value={alat}>{alat}</option>
+                  ))}
+                </select>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           <div>
-            <label className={labelClass}>Nomor Unit</label>
+            <LabelIkon icon={Hash}>Nomor Unit</LabelIkon>
             <input
               type="text"
               placeholder="Contoh: EXC-001"
@@ -172,7 +201,7 @@ function InputData() {
           </div>
 
           <div>
-            <label className={labelClass}>Tanggal Uji Terakhir</label>
+            <LabelIkon icon={CalendarDays}>Tanggal Uji Terakhir</LabelIkon>
             <input
               type="date"
               value={tanggalUji}
@@ -182,7 +211,7 @@ function InputData() {
           </div>
 
           <div>
-            <label className={labelClass}>Jangka Waktu Uji Kelayakan</label>
+            <LabelIkon icon={Timer}>Jangka Waktu Uji Kelayakan</LabelIkon>
             <select
               value={jangkaWaktuBulan}
               onChange={(e) => setJangkaWaktuBulan(Number(e.target.value))}
@@ -195,7 +224,7 @@ function InputData() {
           </div>
 
           <div>
-            <label className={labelClass}>Status Kelayakan</label>
+            <LabelIkon icon={ShieldCheck}>Status Kelayakan</LabelIkon>
             <select
               value={statusKelayakan}
               onChange={(e) => setStatusKelayakan(e.target.value)}
@@ -208,7 +237,7 @@ function InputData() {
           </div>
 
           <div className="md:col-span-2">
-            <label className={labelClass}>Temuan (jika ada)</label>
+            <LabelIkon icon={ClipboardList}>Temuan (jika ada)</LabelIkon>
             <textarea
               placeholder="Contoh: Kebocoran oli hidrolik pada silinder boom"
               value={temuan}
@@ -219,7 +248,7 @@ function InputData() {
           </div>
 
           <div className="md:col-span-2">
-            <label className={labelClass}>Tindak Lanjut Perbaikan (jika ada)</label>
+            <LabelIkon icon={ClipboardList}>Tindak Lanjut Perbaikan (jika ada)</LabelIkon>
             <textarea
               placeholder="Contoh: Sudah dilakukan penggantian seal hidrolik"
               value={tindakLanjut}
@@ -230,7 +259,7 @@ function InputData() {
           </div>
 
           <div>
-            <label className={labelClass}>Foto Temuan (opsional)</label>
+            <LabelIkon icon={ImagePlus}>Foto Temuan (opsional)</LabelIkon>
             <input
               type="file"
               accept="image/*"
@@ -243,25 +272,32 @@ function InputData() {
           </div>
 
           <div>
-            <label className={labelClass}>Upload File PDF (opsional)</label>
+            <LabelIkon icon={FileUp}>Upload File PDF (opsional)</LabelIkon>
             <input
               type="file"
               accept="application/pdf"
               onChange={handlePdfChange}
               className={`${inputClass} dark:file:text-white`}
             />
-            {pdfNama && <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">📄 {pdfNama}</p>}
+            {pdfNama && (
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                <FileText size={14} /> {pdfNama}
+              </p>
+            )}
           </div>
         </div>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           onClick={tambahUnit}
           disabled={sedangSimpan}
-          className="bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-200 text-gray-900 px-4 py-2 rounded font-semibold"
+          className="bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-200 text-gray-900 px-4 py-2 rounded font-semibold flex items-center gap-2"
         >
+          <PackagePlus size={18} />
           {sedangSimpan ? "Menyimpan..." : "Tambah Unit"}
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     </div>
   )
 }
