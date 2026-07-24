@@ -72,6 +72,13 @@ function DataSPIP() {
     : PILIHAN_JENIS_ALAT[filter.jenisSpip]
 
   async function updateStatusKelayakan(unit, statusBaru) {
+    if (statusBaru === unit.statusKelayakan) return
+
+    const konfirmasi = window.confirm(
+      `Ubah status kelayakan "${unit.namaUnit} (${unit.nomorUnit})" dari "${unit.statusKelayakan}" menjadi "${statusBaru}"?`
+    )
+    if (!konfirmasi) return
+
     try {
       const res = await apiFetch(`${API_URL}/${unit.id}`, {
         method: "PUT",

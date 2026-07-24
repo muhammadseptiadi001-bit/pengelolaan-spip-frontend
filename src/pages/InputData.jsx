@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileText, PackagePlus, Building2, Tags, Wrench, Hash,
@@ -30,6 +30,14 @@ function SectionTitle({ children }) {
   )
 }
 
+function tanggalHariIni() {
+  const sekarang = new Date()
+  const tahun = sekarang.getFullYear()
+  const bulan = String(sekarang.getMonth() + 1).padStart(2, "0")
+  const tanggal = String(sekarang.getDate()).padStart(2, "0")
+  return `${tahun}-${bulan}-${tanggal}`
+}
+
 function InputData() {
   const user = ambilUser()
 
@@ -47,6 +55,21 @@ function InputData() {
   const [pdfNama, setPdfNama] = useState("")
   const [pdfData, setPdfData] = useState(null)
   const [sedangSimpan, setSedangSimpan] = useState(false)
+  const [daftarNomorUnitAda, setDaftarNomorUnitAda] = useState([])
+
+  useEffect(() => {
+    ambilDaftarNomorUnit()
+  }, [])
+
+  async function ambilDaftarNomorUnit() {
+    try {
+      const res = await apiFetch(API_URL)
+      const data = await res.json()
+      setDaftarNomorUnitAda(data.map((unit) => unit.nomorUnit?.toLowerCase().trim()))
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   function handleJenisSpipChange(e) {
     const kategoriBaru = e.target.value
@@ -76,6 +99,16 @@ function InputData() {
   async function tambahUnit() {
     if (namaUnit === "" || jenisAlat === "" || nomorUnit === "" || tanggalUji === "" || namaPerusahaan === "") {
       tampilkanToast("Kolom Nama Perusahaan, Nama Unit, Jenis Alat, Nomor Unit, dan Tanggal Uji wajib diisi!", "gagal")
+      return
+    }
+
+    if (tanggalUji > tanggalHariIni()) {
+      tampilkanToast("Tanggal Uji Terakhir tidak boleh di masa depan.", "gagal")
+      return
+    }
+
+    if (daftarNomorUnitAda.includes(nomorUnit.toLowerCase().trim())) {
+      tampilkanToast(`Nomor Unit "${nomorUnit}" sudah terdaftar. Gunakan nomor unit yang berbeda.`, "gagal")
       return
     }
 
@@ -120,6 +153,7 @@ function InputData() {
       setFotoBase64(null)
       setPdfNama("")
       setPdfData(null)
+      ambilDaftarNomorUnit()
     } catch (err) {
       tampilkanToast("Gagal menambahkan unit. Pastikan server backend sedang berjalan.", "gagal")
     } finally {
@@ -228,6 +262,7 @@ function InputData() {
             <input
               type="date"
               value={tanggalUji}
+              max={tanggalHariIni()}
               onChange={(e) => setTanggalUji(e.target.value)}
               className={inputClass}
             />
