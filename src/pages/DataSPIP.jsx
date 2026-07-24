@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import * as XLSX from 'xlsx'
 import {
   Download, CheckCircle2, XCircle, AlertCircle, Clock, ImageIcon, FileText, Trash2,
-  ClipboardList, ChevronLeft, ChevronRight, Printer
+  ClipboardList, ChevronLeft, ChevronRight, Printer, Tag
 } from 'lucide-react'
 import {
   API_URL, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT, SEMUA_JENIS_ALAT,
@@ -202,6 +202,83 @@ function DataSPIP() {
     jendelaCetak.onload = () => {
       jendelaCetak.focus()
       jendelaCetak.print()
+    }
+  }
+
+  function cetakStiker(unit) {
+    const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
+    const statusWaktu = hitungStatusWaktu(jatuhTempo)
+
+    const isiQr = `Nomor Unit: ${unit.nomorUnit} | Jatuh Tempo: ${formatTanggal(jatuhTempo)}`
+    const urlQr = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(isiQr)}`
+
+    const jendelaCetak = window.open('', '_blank', 'width=500,height=650')
+    if (!jendelaCetak) {
+      tampilkanToast("Gagal membuka jendela cetak. Pastikan pop-up tidak diblokir browser.", "gagal")
+      return
+    }
+
+    const warnaBadge =
+      statusWaktu.label === "Aman" ? "#15803d" :
+      statusWaktu.label === "Mendekati Jatuh Tempo" ? "#a16207" : "#b91c1c"
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Stiker QR - ${unit.namaUnit} (${unit.nomorUnit})</title>
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: Arial, Helvetica, sans-serif; color: #1f2937; display: flex; justify-content: center; padding: 20px; }
+          .stiker {
+            width: 8cm;
+            border: 2px solid #1f2937;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+          }
+          .stiker h2 { font-size: 12px; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+          .stiker img { width: 130px; height: 130px; margin: 6px auto; display: block; }
+          .stiker .nomor { font-size: 15px; font-weight: bold; margin-top: 4px; }
+          .stiker .tempo { font-size: 11px; color: #4b5563; margin-top: 2px; }
+          .stiker .status {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #fff;
+            background: ${warnaBadge};
+          }
+          .stiker .perusahaan { font-size: 9px; color: #9ca3af; margin-top: 6px; }
+          @media print {
+            body { padding: 0; }
+            .stiker { border: 1px dashed #9ca3af; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="stiker">
+          <h2>Kartu Uji Kelayakan SPIP</h2>
+          <img src="${urlQr}" alt="QR Code" />
+          <div class="nomor">${unit.nomorUnit}</div>
+          <div class="tempo">Jatuh Tempo: ${formatTanggal(jatuhTempo)}</div>
+          <div class="status">${statusWaktu.label}</div>
+          <div class="perusahaan">${unit.namaPerusahaan}</div>
+        </div>
+      </body>
+      </html>
+    `
+
+    jendelaCetak.document.write(html)
+    jendelaCetak.document.close()
+    jendelaCetak.onload = () => {
+      setTimeout(() => {
+        jendelaCetak.focus()
+        jendelaCetak.print()
+      }, 300)
     }
   }
 
@@ -448,7 +525,7 @@ function DataSPIP() {
                             ) : <span className="text-gray-300 dark:text-gray-600">-</span>}
                           </td>
                           <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <motion.button
                                 whileHover={{ scale: 1.08 }}
                                 whileTap={{ scale: 0.95 }}
@@ -457,6 +534,15 @@ function DataSPIP() {
                                 className="bg-blue-50 hover:bg-blue-500 text-blue-600 hover:text-white dark:bg-blue-950 dark:hover:bg-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
                               >
                                 <Printer size={13} /> Cetak
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.08 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => cetakStiker(unit)}
+                                title="Cetak stiker QR untuk ditempel di unit"
+                                className="bg-purple-50 hover:bg-purple-500 text-purple-600 hover:text-white dark:bg-purple-950 dark:hover:bg-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                              >
+                                <Tag size={13} /> Stiker
                               </motion.button>
                               <motion.button
                                 whileHover={{ scale: 1.08 }}
