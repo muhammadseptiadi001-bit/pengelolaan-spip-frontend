@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import * as XLSX from 'xlsx'
 import {
   Download, CheckCircle2, XCircle, AlertCircle, Clock, ImageIcon, FileText, Trash2,
-  ClipboardList, ChevronLeft, ChevronRight
+  ClipboardList, ChevronLeft, ChevronRight, Printer
 } from 'lucide-react'
 import {
   API_URL, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT, SEMUA_JENIS_ALAT,
@@ -121,6 +121,87 @@ function DataSPIP() {
       ambilData()
     } catch (err) {
       tampilkanToast("Gagal menghapus data. Pastikan server backend sedang berjalan.", "gagal")
+    }
+  }
+
+  function cetakUnit(unit) {
+    const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
+    const statusWaktu = hitungStatusWaktu(jatuhTempo)
+
+    const jendelaCetak = window.open('', '_blank', 'width=850,height=1100')
+    if (!jendelaCetak) {
+      tampilkanToast("Gagal membuka jendela cetak. Pastikan pop-up tidak diblokir browser.", "gagal")
+      return
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Laporan Uji Kelayakan - ${unit.namaUnit} (${unit.nomorUnit})</title>
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: Arial, Helvetica, sans-serif; color: #1f2937; padding: 32px; }
+          .kop { text-align: center; border-bottom: 3px solid #1f2937; padding-bottom: 12px; margin-bottom: 20px; }
+          .kop h1 { font-size: 18px; letter-spacing: 0.5px; }
+          .kop p { font-size: 12px; color: #6b7280; margin-top: 2px; }
+          .info-cetak { font-size: 11px; color: #9ca3af; text-align: right; margin-bottom: 16px; }
+          table.detail { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          table.detail td { border: 1px solid #d1d5db; padding: 8px 10px; font-size: 13px; vertical-align: top; }
+          table.detail td.label { width: 200px; font-weight: bold; background: #f9fafb; }
+          .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: bold; }
+          .badge-layak { background: #dcfce7; color: #15803d; }
+          .badge-tidak { background: #fee2e2; color: #b91c1c; }
+          .badge-catatan { background: #fef9c3; color: #a16207; }
+          .foto-temuan { max-width: 260px; border-radius: 6px; margin-top: 8px; border: 1px solid #d1d5db; }
+          .ttd { display: flex; justify-content: space-between; margin-top: 60px; }
+          .ttd div { text-align: center; width: 220px; }
+          .ttd .garis { margin-top: 60px; border-top: 1px solid #1f2937; padding-top: 6px; font-size: 12px; }
+          @media print {
+            body { padding: 0 24px; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="kop">
+          <h1>LAPORAN UJI KELAYAKAN SISTEM PENGAMANAN INSTALASI PERTAMBANGAN (SPIP)</h1>
+          <p>${unit.namaPerusahaan}</p>
+        </div>
+        <div class="info-cetak">Dicetak pada: ${new Date().toLocaleString("id-ID")}</div>
+
+        <table class="detail">
+          <tr><td class="label">Kategori SPIP</td><td>${unit.jenisSpip}</td></tr>
+          <tr><td class="label">Jenis Alat</td><td>${unit.jenisAlat}</td></tr>
+          <tr><td class="label">Nama/Model Unit</td><td>${unit.namaUnit}</td></tr>
+          <tr><td class="label">Nomor Unit</td><td>${unit.nomorUnit}</td></tr>
+          <tr><td class="label">Tanggal Uji Terakhir</td><td>${formatTanggal(new Date(unit.tanggalUjiTerakhir))}</td></tr>
+          <tr><td class="label">Jangka Waktu Uji</td><td>${unit.jangkaWaktuBulan} bulan</td></tr>
+          <tr><td class="label">Jatuh Tempo Berikutnya</td><td>${formatTanggal(jatuhTempo)}</td></tr>
+          <tr><td class="label">Sisa Waktu</td><td>${hitungSisaDetail(jatuhTempo)}</td></tr>
+          <tr><td class="label">Status Waktu</td><td>${statusWaktu.label}</td></tr>
+          <tr><td class="label">Status Kelayakan</td><td>
+            <span class="badge ${unit.statusKelayakan === "Layak" ? "badge-layak" : unit.statusKelayakan === "Tidak Layak" ? "badge-tidak" : "badge-catatan"}">${unit.statusKelayakan}</span>
+          </td></tr>
+          <tr><td class="label">Temuan</td><td>${unit.temuan ? unit.temuan.replace(/</g, "&lt;") : "-"}</td></tr>
+          <tr><td class="label">Tindak Lanjut Perbaikan</td><td>${unit.tindakLanjut ? unit.tindakLanjut.replace(/</g, "&lt;") : "-"}</td></tr>
+          <tr><td class="label">Dibuat Oleh</td><td>${unit.dibuatOleh || "-"}</td></tr>
+          ${unit.foto ? `<tr><td class="label">Foto Temuan</td><td><img class="foto-temuan" src="${unit.foto}" /></td></tr>` : ""}
+        </table>
+
+        <div class="ttd">
+          <div><div class="garis">Diperiksa Oleh</div></div>
+          <div><div class="garis">Disetujui Oleh</div></div>
+        </div>
+      </body>
+      </html>
+    `
+
+    jendelaCetak.document.write(html)
+    jendelaCetak.document.close()
+    jendelaCetak.onload = () => {
+      jendelaCetak.focus()
+      jendelaCetak.print()
     }
   }
 
@@ -367,14 +448,25 @@ function DataSPIP() {
                             ) : <span className="text-gray-300 dark:text-gray-600">-</span>}
                           </td>
                           <td className="py-2.5 px-3">
-                            <motion.button
-                              whileHover={{ scale: 1.08 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => hapusUnit(unit)}
-                              className="bg-red-50 hover:bg-red-500 text-red-600 hover:text-white dark:bg-red-950 dark:hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                            >
-                              <Trash2 size={13} /> Hapus
-                            </motion.button>
+                            <div className="flex items-center gap-1.5">
+                              <motion.button
+                                whileHover={{ scale: 1.08 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => cetakUnit(unit)}
+                                title="Cetak laporan unit ini"
+                                className="bg-blue-50 hover:bg-blue-500 text-blue-600 hover:text-white dark:bg-blue-950 dark:hover:bg-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                              >
+                                <Printer size={13} /> Cetak
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.08 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => hapusUnit(unit)}
+                                className="bg-red-50 hover:bg-red-500 text-red-600 hover:text-white dark:bg-red-950 dark:hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                              >
+                                <Trash2 size={13} /> Hapus
+                              </motion.button>
+                            </div>
                           </td>
                         </motion.tr>
                       )
