@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import * as XLSX from 'xlsx'
 import {
   Download, CheckCircle2, XCircle, AlertCircle, Clock, ImageIcon, FileText, Trash2,
-  ClipboardList, ChevronLeft, ChevronRight, Printer, Tag
+  ClipboardList, ChevronLeft, ChevronRight, Printer, Tag, MoveHorizontal
 } from 'lucide-react'
 import {
   API_URL, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT, SEMUA_JENIS_ALAT,
@@ -30,6 +30,8 @@ function DataSPIP() {
   const [daftarUnit, setDaftarUnit] = useState([])
   const [fotoDipilih, setFotoDipilih] = useState(null)
   const [halaman, setHalaman] = useState(1)
+  const [bisaScrollKanan, setBisaScrollKanan] = useState(true)
+  const scrollRef = useRef(null)
 
   const [filter, setFilter] = useState({
     perusahaan: "",
@@ -48,6 +50,18 @@ function DataSPIP() {
   useEffect(() => {
     setHalaman(1)
   }, [filter])
+
+  useEffect(() => {
+    cekScroll()
+  }, [daftarUnit, halaman])
+
+  function cekScroll() {
+    const el = scrollRef.current
+    if (!el) return
+    const bisaDigeser = el.scrollWidth > el.clientWidth + 4
+    const sudahMentok = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4
+    setBisaScrollKanan(bisaDigeser && !sudahMentok)
+  }
 
   async function ambilData() {
     try {
@@ -345,7 +359,7 @@ function DataSPIP() {
     <div>
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Data SPIP</h1>
 
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800 overflow-x-auto">
+      <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 dark:from-gray-700 dark:to-black shadow-md">
@@ -371,195 +385,210 @@ function DataSPIP() {
           <p className="text-gray-500 dark:text-gray-400">Belum ada unit yang diinput.</p>
         ) : (
           <>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800">
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Perusahaan</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Kategori SPIP</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Unit</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Jenis Alat</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nomor Unit</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tanggal Uji</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Jatuh Tempo</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Sisa Waktu</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Waktu</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Kelayakan</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Temuan</th>
-                    <th className="py-2.5 px-3 min-w-[220px] text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tindak Lanjut</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Foto</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">PDF</th>
-                    <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Aksi</th>
-                  </tr>
-                  <tr className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-                    <th className="py-2 px-3">
-                      <input type="text" placeholder="Cari..." value={filter.perusahaan}
-                        onChange={(e) => updateFilter("perusahaan", e.target.value)}
-                        className={filterInputClass} />
-                    </th>
-                    <th className="py-2 px-3">
-                      <select value={filter.jenisSpip} onChange={(e) => updateFilterJenisSpip(e.target.value)}
-                        className={filterInputClass}>
-                        <option value="Semua">Semua</option>
-                        {PILIHAN_JENIS_SPIP.map((jenis) => (
-                          <option key={jenis} value={jenis}>{jenis}</option>
-                        ))}
-                      </select>
-                    </th>
-                    <th className="py-2 px-3">
-                      <input type="text" placeholder="Cari..." value={filter.namaUnit}
-                        onChange={(e) => updateFilter("namaUnit", e.target.value)}
-                        className={filterInputClass} />
-                    </th>
-                    <th className="py-2 px-3">
-                      <select value={filter.jenisAlat} onChange={(e) => updateFilter("jenisAlat", e.target.value)}
-                        className={filterInputClass}>
-                        <option value="Semua">Semua</option>
-                        {pilihanJenisAlatFilter.map((alat) => (
-                          <option key={alat} value={alat}>{alat}</option>
-                        ))}
-                      </select>
-                    </th>
-                    <th className="py-2 px-3">
-                      <input type="text" placeholder="Cari..." value={filter.nomorUnit}
-                        onChange={(e) => updateFilter("nomorUnit", e.target.value)}
-                        className={filterInputClass} />
-                    </th>
-                    <th className="py-2 px-3"></th>
-                    <th className="py-2 px-3"></th>
-                    <th className="py-2 px-3"></th>
-                    <th className="py-2 px-3">
-                      <select value={filter.statusWaktu} onChange={(e) => updateFilter("statusWaktu", e.target.value)}
-                        className={filterInputClass}>
-                        <option value="Semua">Semua</option>
-                        <option value="Aman">Aman</option>
-                        <option value="Mendekati Jatuh Tempo">Mendekati Jatuh Tempo</option>
-                        <option value="Sudah Lewat">Sudah Lewat</option>
-                      </select>
-                    </th>
-                    <th className="py-2 px-3">
-                      <select value={filter.statusKelayakan} onChange={(e) => updateFilter("statusKelayakan", e.target.value)}
-                        className={filterInputClass}>
-                        <option value="Semua">Semua</option>
-                        <option value="Layak">Layak</option>
-                        <option value="Tidak Layak">Tidak Layak</option>
-                        <option value="Layak Dengan Catatan">Layak Dengan Catatan</option>
-                      </select>
-                    </th>
-                    <th className="py-2 px-3"></th>
-                    <th className="py-2 px-3"></th>
-                    <th className="py-2 px-3"></th>
-                    <th className="py-2 px-3"></th>
-                    <th className="py-2 px-3"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dataHalamanIni.length === 0 ? (
-                    <tr>
-                      <td colSpan="15" className="py-6 text-center text-gray-500 dark:text-gray-400">Tidak ada data yang cocok dengan filter.</td>
-                    </tr>
-                  ) : (
-                    dataHalamanIni.map((unit, index) => {
-                      const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
-                      const statusWaktu = hitungStatusWaktu(jatuhTempo)
+            <div className="flex items-center gap-1.5 mb-2 md:hidden text-gray-400 dark:text-gray-500">
+              <MoveHorizontal size={13} />
+              <span className="text-xs">Geser tabel ke kiri untuk lihat kolom lainnya</span>
+            </div>
 
-                      return (
-                        <motion.tr
-                          key={unit.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          whileHover={{ backgroundColor: "rgba(234, 179, 8, 0.05)" }}
-                          transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.6) }}
-                          className="border-b border-gray-100 dark:border-gray-800/60 align-top text-gray-800 dark:text-gray-200"
-                        >
-                          <td className="py-2.5 px-3">{unit.namaPerusahaan}</td>
-                          <td className="py-2.5 px-3">{unit.jenisSpip}</td>
-                          <td className="py-2.5 px-3">{unit.namaUnit}</td>
-                          <td className="py-2.5 px-3">{unit.jenisAlat}</td>
-                          <td className="py-2.5 px-3">{unit.nomorUnit}</td>
-                          <td className="py-2.5 px-3">{formatTanggal(new Date(unit.tanggalUjiTerakhir))}</td>
-                          <td className="py-2.5 px-3">{formatTanggal(jatuhTempo)}</td>
-                          <td className="py-2.5 px-3">{hitungSisaDetail(jatuhTempo)}</td>
-                          <td className="py-2.5 px-3">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${statusWaktu.warna}`}>
-                              {ikonStatusWaktu(statusWaktu.label)}
-                              {statusWaktu.label}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-1.5">
-                              {ikonStatusKelayakan(unit.statusKelayakan)}
-                              <select
-                                value={unit.statusKelayakan}
-                                onChange={(e) => updateStatusKelayakan(unit, e.target.value)}
-                                className={`px-2.5 py-1 rounded-full text-xs font-semibold border-0 ${warnaKelayakan(unit.statusKelayakan)}`}
-                              >
-                                <option value="Layak">Layak</option>
-                                <option value="Tidak Layak">Tidak Layak</option>
-                                <option value="Layak Dengan Catatan">Layak Dengan Catatan</option>
-                              </select>
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-3 max-w-xs">{unit.temuan ? unit.temuan : <span className="text-gray-400 dark:text-gray-500">-</span>}</td>
-                          <td className="py-2.5 px-3 min-w-[220px]">
-                            <textarea
-                              defaultValue={unit.tindakLanjut || ""}
-                              placeholder="Belum ada tindak lanjut..."
-                              onBlur={(e) => updateTindakLanjut(unit, e.target.value)}
-                              className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
-                              rows="2"
-                            />
-                          </td>
-                          <td className="py-2.5 px-3">
-                            {unit.foto ? (
-                              <button onClick={() => setFotoDipilih(unit.foto)} className="text-gray-500 dark:text-gray-400 hover:text-yellow-500 transition-colors">
-                                <ImageIcon size={19} />
-                              </button>
-                            ) : <span className="text-gray-300 dark:text-gray-600">-</span>}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            {unit.pdfData ? (
-                              <a href={unit.pdfData} download={unit.pdfNama} title={unit.pdfNama} className="text-gray-500 dark:text-gray-400 hover:text-yellow-500 inline-block transition-colors">
-                                <FileText size={19} />
-                              </a>
-                            ) : <span className="text-gray-300 dark:text-gray-600">-</span>}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <motion.button
-                                whileHover={{ scale: 1.08 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => cetakUnit(unit)}
-                                title="Cetak laporan unit ini"
-                                className="bg-blue-50 hover:bg-blue-500 text-blue-600 hover:text-white dark:bg-blue-950 dark:hover:bg-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                              >
-                                <Printer size={13} /> Cetak
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.08 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => cetakStiker(unit)}
-                                title="Cetak stiker QR untuk ditempel di unit"
-                                className="bg-purple-50 hover:bg-purple-500 text-purple-600 hover:text-white dark:bg-purple-950 dark:hover:bg-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                              >
-                                <Tag size={13} /> Stiker
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.08 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => hapusUnit(unit)}
-                                className="bg-red-50 hover:bg-red-500 text-red-600 hover:text-white dark:bg-red-950 dark:hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                              >
-                                <Trash2 size={13} /> Hapus
-                              </motion.button>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
+            <div className="relative">
+              <div
+                ref={scrollRef}
+                onScroll={cekScroll}
+                className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto"
+              >
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800">
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Perusahaan</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Kategori SPIP</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Unit</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Jenis Alat</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nomor Unit</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tanggal Uji</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Jatuh Tempo</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Sisa Waktu</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Waktu</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Kelayakan</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Temuan</th>
+                      <th className="py-2.5 px-3 min-w-[220px] text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tindak Lanjut</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Foto</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">PDF</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Aksi</th>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                      <th className="py-2 px-3">
+                        <input type="text" placeholder="Cari..." value={filter.perusahaan}
+                          onChange={(e) => updateFilter("perusahaan", e.target.value)}
+                          className={filterInputClass} />
+                      </th>
+                      <th className="py-2 px-3">
+                        <select value={filter.jenisSpip} onChange={(e) => updateFilterJenisSpip(e.target.value)}
+                          className={filterInputClass}>
+                          <option value="Semua">Semua</option>
+                          {PILIHAN_JENIS_SPIP.map((jenis) => (
+                            <option key={jenis} value={jenis}>{jenis}</option>
+                          ))}
+                        </select>
+                      </th>
+                      <th className="py-2 px-3">
+                        <input type="text" placeholder="Cari..." value={filter.namaUnit}
+                          onChange={(e) => updateFilter("namaUnit", e.target.value)}
+                          className={filterInputClass} />
+                      </th>
+                      <th className="py-2 px-3">
+                        <select value={filter.jenisAlat} onChange={(e) => updateFilter("jenisAlat", e.target.value)}
+                          className={filterInputClass}>
+                          <option value="Semua">Semua</option>
+                          {pilihanJenisAlatFilter.map((alat) => (
+                            <option key={alat} value={alat}>{alat}</option>
+                          ))}
+                        </select>
+                      </th>
+                      <th className="py-2 px-3">
+                        <input type="text" placeholder="Cari..." value={filter.nomorUnit}
+                          onChange={(e) => updateFilter("nomorUnit", e.target.value)}
+                          className={filterInputClass} />
+                      </th>
+                      <th className="py-2 px-3"></th>
+                      <th className="py-2 px-3"></th>
+                      <th className="py-2 px-3"></th>
+                      <th className="py-2 px-3">
+                        <select value={filter.statusWaktu} onChange={(e) => updateFilter("statusWaktu", e.target.value)}
+                          className={filterInputClass}>
+                          <option value="Semua">Semua</option>
+                          <option value="Aman">Aman</option>
+                          <option value="Mendekati Jatuh Tempo">Mendekati Jatuh Tempo</option>
+                          <option value="Sudah Lewat">Sudah Lewat</option>
+                        </select>
+                      </th>
+                      <th className="py-2 px-3">
+                        <select value={filter.statusKelayakan} onChange={(e) => updateFilter("statusKelayakan", e.target.value)}
+                          className={filterInputClass}>
+                          <option value="Semua">Semua</option>
+                          <option value="Layak">Layak</option>
+                          <option value="Tidak Layak">Tidak Layak</option>
+                          <option value="Layak Dengan Catatan">Layak Dengan Catatan</option>
+                        </select>
+                      </th>
+                      <th className="py-2 px-3"></th>
+                      <th className="py-2 px-3"></th>
+                      <th className="py-2 px-3"></th>
+                      <th className="py-2 px-3"></th>
+                      <th className="py-2 px-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dataHalamanIni.length === 0 ? (
+                      <tr>
+                        <td colSpan="15" className="py-6 text-center text-gray-500 dark:text-gray-400">Tidak ada data yang cocok dengan filter.</td>
+                      </tr>
+                    ) : (
+                      dataHalamanIni.map((unit, index) => {
+                        const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
+                        const statusWaktu = hitungStatusWaktu(jatuhTempo)
+
+                        return (
+                          <motion.tr
+                            key={unit.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileHover={{ backgroundColor: "rgba(234, 179, 8, 0.05)" }}
+                            transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.6) }}
+                            className="border-b border-gray-100 dark:border-gray-800/60 align-top text-gray-800 dark:text-gray-200"
+                          >
+                            <td className="py-2.5 px-3">{unit.namaPerusahaan}</td>
+                            <td className="py-2.5 px-3">{unit.jenisSpip}</td>
+                            <td className="py-2.5 px-3">{unit.namaUnit}</td>
+                            <td className="py-2.5 px-3">{unit.jenisAlat}</td>
+                            <td className="py-2.5 px-3">{unit.nomorUnit}</td>
+                            <td className="py-2.5 px-3">{formatTanggal(new Date(unit.tanggalUjiTerakhir))}</td>
+                            <td className="py-2.5 px-3">{formatTanggal(jatuhTempo)}</td>
+                            <td className="py-2.5 px-3">{hitungSisaDetail(jatuhTempo)}</td>
+                            <td className="py-2.5 px-3">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${statusWaktu.warna}`}>
+                                {ikonStatusWaktu(statusWaktu.label)}
+                                {statusWaktu.label}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="flex items-center gap-1.5">
+                                {ikonStatusKelayakan(unit.statusKelayakan)}
+                                <select
+                                  value={unit.statusKelayakan}
+                                  onChange={(e) => updateStatusKelayakan(unit, e.target.value)}
+                                  className={`px-2.5 py-1 rounded-full text-xs font-semibold border-0 ${warnaKelayakan(unit.statusKelayakan)}`}
+                                >
+                                  <option value="Layak">Layak</option>
+                                  <option value="Tidak Layak">Tidak Layak</option>
+                                  <option value="Layak Dengan Catatan">Layak Dengan Catatan</option>
+                                </select>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 max-w-xs">{unit.temuan ? unit.temuan : <span className="text-gray-400 dark:text-gray-500">-</span>}</td>
+                            <td className="py-2.5 px-3 min-w-[220px]">
+                              <textarea
+                                defaultValue={unit.tindakLanjut || ""}
+                                placeholder="Belum ada tindak lanjut..."
+                                onBlur={(e) => updateTindakLanjut(unit, e.target.value)}
+                                className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
+                                rows="2"
+                              />
+                            </td>
+                            <td className="py-2.5 px-3">
+                              {unit.foto ? (
+                                <button onClick={() => setFotoDipilih(unit.foto)} className="text-gray-500 dark:text-gray-400 hover:text-yellow-500 transition-colors">
+                                  <ImageIcon size={19} />
+                                </button>
+                              ) : <span className="text-gray-300 dark:text-gray-600">-</span>}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              {unit.pdfData ? (
+                                <a href={unit.pdfData} download={unit.pdfNama} title={unit.pdfNama} className="text-gray-500 dark:text-gray-400 hover:text-yellow-500 inline-block transition-colors">
+                                  <FileText size={19} />
+                                </a>
+                              ) : <span className="text-gray-300 dark:text-gray-600">-</span>}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <motion.button
+                                  whileHover={{ scale: 1.08 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => cetakUnit(unit)}
+                                  title="Cetak laporan unit ini"
+                                  className="bg-blue-50 hover:bg-blue-500 text-blue-600 hover:text-white dark:bg-blue-950 dark:hover:bg-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                                >
+                                  <Printer size={13} /> Cetak
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.08 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => cetakStiker(unit)}
+                                  title="Cetak stiker QR untuk ditempel di unit"
+                                  className="bg-purple-50 hover:bg-purple-500 text-purple-600 hover:text-white dark:bg-purple-950 dark:hover:bg-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                                >
+                                  <Tag size={13} /> Stiker
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.08 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => hapusUnit(unit)}
+                                  className="bg-red-50 hover:bg-red-500 text-red-600 hover:text-white dark:bg-red-950 dark:hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                                >
+                                  <Trash2 size={13} /> Hapus
+                                </motion.button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {bisaScrollKanan && (
+                <div className="pointer-events-none absolute top-0 right-0 h-full w-10 bg-gradient-to-l from-white dark:from-gray-900 to-transparent rounded-r-xl"></div>
+              )}
             </div>
 
             <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
