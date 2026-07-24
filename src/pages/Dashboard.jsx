@@ -35,7 +35,7 @@ function AngkaCountUp({ nilai, durasi = 800 }) {
 
 function KartuSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800 animate-pulse">
+    <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:border dark:border-gray-800 animate-pulse">
       <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
       <div className="h-7 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
     </div>
@@ -44,9 +44,21 @@ function KartuSkeleton() {
 
 function GrafikSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800 animate-pulse">
+    <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800 animate-pulse">
       <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-      <div className="h-[260px] bg-gray-100 dark:bg-gray-800 rounded"></div>
+      <div className="h-[260px] bg-gray-100 dark:bg-gray-800 rounded-xl"></div>
+    </div>
+  )
+}
+
+function TooltipModern({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null
+  return (
+    <div className="bg-gray-900/95 dark:bg-black/90 backdrop-blur-sm text-white rounded-xl shadow-2xl px-4 py-2.5 border border-white/10">
+      <p className="text-xs text-gray-300 mb-0.5">{label}</p>
+      <p className="text-sm font-bold" style={{ color: payload[0].payload.fill || "#eab308" }}>
+        {payload[0].value} unit
+      </p>
     </div>
   )
 }
@@ -145,10 +157,10 @@ function Dashboard() {
   }, [dataTerfilter])
 
   const kartuRingkasan = [
-    { label: "Total Unit", nilai: ringkasan.total, icon: Boxes, warna: "text-gray-800 dark:text-white", bgIkon: "bg-gray-100 dark:bg-gray-800" },
-    { label: "Aman", nilai: ringkasan.aman, icon: CheckCircle2, warna: "text-green-600 dark:text-green-400", bgIkon: "bg-green-50 dark:bg-green-950" },
-    { label: "Mendekati Jatuh Tempo", nilai: ringkasan.mendekati, icon: AlertTriangle, warna: "text-yellow-600 dark:text-yellow-400", bgIkon: "bg-yellow-50 dark:bg-yellow-950" },
-    { label: "Sudah Lewat", nilai: ringkasan.lewat, icon: XCircle, warna: "text-red-600 dark:text-red-400", bgIkon: "bg-red-50 dark:bg-red-950" },
+    { label: "Total Unit", nilai: ringkasan.total, icon: Boxes, warna: "text-gray-800 dark:text-white", aksen: "from-gray-400 to-gray-600", bgIkon: "bg-gradient-to-br from-gray-500 to-gray-700" },
+    { label: "Aman", nilai: ringkasan.aman, icon: CheckCircle2, warna: "text-green-600 dark:text-green-400", aksen: "from-green-400 to-emerald-600", bgIkon: "bg-gradient-to-br from-green-400 to-emerald-600" },
+    { label: "Mendekati Jatuh Tempo", nilai: ringkasan.mendekati, icon: AlertTriangle, warna: "text-yellow-600 dark:text-yellow-400", aksen: "from-yellow-400 to-amber-600", bgIkon: "bg-gradient-to-br from-yellow-400 to-amber-600" },
+    { label: "Sudah Lewat", nilai: ringkasan.lewat, icon: XCircle, warna: "text-red-600 dark:text-red-400", aksen: "from-red-400 to-rose-600", bgIkon: "bg-gradient-to-br from-red-400 to-rose-600" },
   ]
 
   return (
@@ -162,7 +174,7 @@ function Dashboard() {
             <select
               value={filterJenisSpip}
               onChange={(e) => setFilterJenisSpip(e.target.value)}
-              className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded px-3 py-2"
+              className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2"
             >
               <option value="Semua">Semua</option>
               {PILIHAN_JENIS_SPIP.map((jenis) => (
@@ -176,7 +188,7 @@ function Dashboard() {
             whileTap={{ scale: 0.97 }}
             onClick={tesKirimNotifikasi}
             disabled={sedangKirim}
-            className="bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-200 text-gray-900 px-4 py-2 rounded font-semibold h-fit flex items-center gap-2"
+            className="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 disabled:opacity-50 text-gray-900 px-4 py-2 rounded-lg font-semibold h-fit flex items-center gap-2 shadow-md shadow-yellow-400/20"
           >
             <Send size={16} />
             {sedangKirim ? "Mengirim..." : "Tes Kirim Notifikasi Email"}
@@ -188,7 +200,7 @@ function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg mb-6 text-sm"
+          className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-xl mb-6 text-sm"
         >
           {statusKirim}
         </motion.div>
@@ -214,18 +226,19 @@ function Dashboard() {
               <motion.div
                 key={kartu.label}
                 variants={varianKartu}
-                whileHover={{ scale: 1.03, boxShadow: "0px 8px 20px rgba(0,0,0,0.12)" }}
+                whileHover={{ scale: 1.03, boxShadow: "0px 12px 28px rgba(0,0,0,0.14)" }}
                 transition={{ duration: 0.2 }}
-                className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800 flex items-start justify-between"
+                className="relative overflow-hidden bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:border dark:border-gray-800 flex items-start justify-between"
               >
-                <div>
+                <div className={`absolute left-0 top-0 h-full w-1 bg-gradient-to-b ${kartu.aksen}`}></div>
+                <div className="pl-2">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{kartu.label}</p>
-                  <p className={`text-2xl font-bold ${kartu.warna}`}>
+                  <p className={`text-3xl font-extrabold tracking-tight ${kartu.warna}`}>
                     <AngkaCountUp nilai={kartu.nilai} />
                   </p>
                 </div>
-                <div className={`p-2 rounded-lg ${kartu.bgIkon}`}>
-                  <Icon size={20} className={kartu.warna} />
+                <div className={`p-2.5 rounded-xl ${kartu.bgIkon} shadow-lg`}>
+                  <Icon size={20} className="text-white" />
                 </div>
               </motion.div>
             )
@@ -244,22 +257,35 @@ function Dashboard() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.01 }}
+            whileHover={{ scale: 1.008, boxShadow: "0px 16px 32px rgba(0,0,0,0.1)" }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800"
+            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
           >
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Status Kelayakan</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Status Kelayakan</h2>
+              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                {dataStatusKelayakan.reduce((a, b) => a + b.jumlah, 0)} total
+              </span>
+            </div>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={dataStatusKelayakan}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
-                <XAxis dataKey="nama" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="jumlah" radius={[4, 4, 0, 0]}>
+              <BarChart data={dataStatusKelayakan} barCategoryGap="30%">
+                <defs>
                   {dataStatusKelayakan.map((entry, index) => (
-                    <Cell key={index} fill={WARNA_KELAYAKAN[entry.nama]} />
+                    <linearGradient key={index} id={`gradKelayakan${index}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={WARNA_KELAYAKAN[entry.nama]} stopOpacity={1} />
+                      <stop offset="100%" stopColor={WARNA_KELAYAKAN[entry.nama]} stopOpacity={0.6} />
+                    </linearGradient>
                   ))}
-                  <LabelList dataKey="jumlah" position="top" style={{ fontSize: 13, fontWeight: 600 }} className="fill-gray-700 dark:fill-gray-200" />
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.15} vertical={false} />
+                <XAxis dataKey="nama" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+                <Tooltip content={<TooltipModern />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+                <Bar dataKey="jumlah" radius={[8, 8, 0, 0]} maxBarSize={70}>
+                  {dataStatusKelayakan.map((entry, index) => (
+                    <Cell key={index} fill={`url(#gradKelayakan${index})`} />
+                  ))}
+                  <LabelList dataKey="jumlah" position="top" style={{ fontSize: 13, fontWeight: 700 }} className="fill-gray-700 dark:fill-gray-200" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -268,22 +294,35 @@ function Dashboard() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.01 }}
+            whileHover={{ scale: 1.008, boxShadow: "0px 16px 32px rgba(0,0,0,0.1)" }}
             transition={{ duration: 0.4, delay: 0.2 }}
-            className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800"
+            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
           >
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Status Waktu Uji</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Status Waktu Uji</h2>
+              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                {dataStatusWaktu.reduce((a, b) => a + b.jumlah, 0)} total
+              </span>
+            </div>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={dataStatusWaktu}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
-                <XAxis dataKey="nama" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="jumlah" radius={[4, 4, 0, 0]}>
+              <BarChart data={dataStatusWaktu} barCategoryGap="30%">
+                <defs>
                   {dataStatusWaktu.map((entry, index) => (
-                    <Cell key={index} fill={WARNA_WAKTU[entry.nama]} />
+                    <linearGradient key={index} id={`gradWaktu${index}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={WARNA_WAKTU[entry.nama]} stopOpacity={1} />
+                      <stop offset="100%" stopColor={WARNA_WAKTU[entry.nama]} stopOpacity={0.6} />
+                    </linearGradient>
                   ))}
-                  <LabelList dataKey="jumlah" position="top" style={{ fontSize: 13, fontWeight: 600 }} className="fill-gray-700 dark:fill-gray-200" />
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.15} vertical={false} />
+                <XAxis dataKey="nama" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+                <Tooltip content={<TooltipModern />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+                <Bar dataKey="jumlah" radius={[8, 8, 0, 0]} maxBarSize={70}>
+                  {dataStatusWaktu.map((entry, index) => (
+                    <Cell key={index} fill={`url(#gradWaktu${index})`} />
+                  ))}
+                  <LabelList dataKey="jumlah" position="top" style={{ fontSize: 13, fontWeight: 700 }} className="fill-gray-700 dark:fill-gray-200" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -292,19 +331,30 @@ function Dashboard() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.005 }}
+            whileHover={{ scale: 1.004, boxShadow: "0px 16px 32px rgba(0,0,0,0.1)" }}
             transition={{ duration: 0.4, delay: 0.3 }}
-            className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800 md:col-span-2"
+            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800 md:col-span-2"
           >
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Jumlah Unit per Kategori SPIP</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Jumlah Unit per Kategori SPIP</h2>
+              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                {dataPerJenisSpip.reduce((a, b) => a + b.jumlah, 0)} total
+              </span>
+            </div>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={dataPerJenisSpip}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
-                <XAxis dataKey="nama" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="jumlah" fill="#eab308" radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey="jumlah" position="top" style={{ fontSize: 13, fontWeight: 600 }} className="fill-gray-700 dark:fill-gray-200" />
+              <BarChart data={dataPerJenisSpip} barCategoryGap="30%">
+                <defs>
+                  <linearGradient id="gradKuning" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#eab308" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#eab308" stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.15} vertical={false} />
+                <XAxis dataKey="nama" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+                <Tooltip content={<TooltipModern />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+                <Bar dataKey="jumlah" fill="url(#gradKuning)" radius={[8, 8, 0, 0]} maxBarSize={60}>
+                  <LabelList dataKey="jumlah" position="top" style={{ fontSize: 13, fontWeight: 700 }} className="fill-gray-700 dark:fill-gray-200" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
