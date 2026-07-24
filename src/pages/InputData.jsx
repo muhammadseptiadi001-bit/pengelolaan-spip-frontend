@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileText, PackagePlus, Building2, Tags, Wrench, Hash,
-  CalendarDays, Timer, ShieldCheck, ClipboardList, Wrench as WrenchAlt,
-  ImagePlus, FileUp
+  CalendarDays, Timer, ShieldCheck, ClipboardList,
+  ImagePlus, FileUp, X
 } from 'lucide-react'
 import { API_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT } from '../utils/spipHelpers'
 import { ambilUser } from '../utils/auth'
@@ -12,10 +12,21 @@ import { apiFetch } from '../utils/apiFetch'
 
 function LabelIkon({ icon: Icon, children }) {
   return (
-    <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-      <Icon size={14} className="text-yellow-500" />
+    <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+      <span className="p-1 rounded-md bg-yellow-50 dark:bg-yellow-950">
+        <Icon size={13} className="text-yellow-600 dark:text-yellow-400" />
+      </span>
       {children}
     </label>
+  )
+}
+
+function SectionTitle({ children }) {
+  return (
+    <div className="flex items-center gap-2 mb-3 mt-6 first:mt-0">
+      <div className="h-4 w-1 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-full"></div>
+      <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{children}</h3>
+    </div>
   )
 }
 
@@ -116,7 +127,7 @@ function InputData() {
     }
   }
 
-  const inputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded px-3 py-2"
+  const inputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl px-3.5 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400"
 
   return (
     <div>
@@ -126,11 +137,20 @@ function InputData() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md dark:shadow-none dark:border dark:border-gray-800"
+        className="bg-white dark:bg-gray-900 p-6 md:p-8 rounded-2xl shadow-sm dark:border dark:border-gray-800"
       >
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Tambah Unit Alat</h2>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 shadow-lg shadow-yellow-400/20">
+            <PackagePlus size={20} className="text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-white">Tambah Unit Alat</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Lengkapi data unit yang akan didaftarkan</p>
+          </div>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <SectionTitle>Identitas Unit</SectionTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <LabelIkon icon={Building2}>Nama Perusahaan</LabelIkon>
             <input
@@ -167,7 +187,7 @@ function InputData() {
           </div>
 
           <div>
-            <LabelIkon icon={WrenchAlt}>Jenis Alat</LabelIkon>
+            <LabelIkon icon={Wrench}>Jenis Alat</LabelIkon>
             <AnimatePresence mode="wait">
               <motion.div
                 key={jenisSpip}
@@ -199,7 +219,10 @@ function InputData() {
               className={inputClass}
             />
           </div>
+        </div>
 
+        <SectionTitle>Jadwal Uji Kelayakan</SectionTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <LabelIkon icon={CalendarDays}>Tanggal Uji Terakhir</LabelIkon>
             <input
@@ -223,20 +246,23 @@ function InputData() {
             </select>
           </div>
 
-          <div>
+          <div className="md:col-span-2">
             <LabelIkon icon={ShieldCheck}>Status Kelayakan</LabelIkon>
             <select
               value={statusKelayakan}
               onChange={(e) => setStatusKelayakan(e.target.value)}
-              className={inputClass}
+              className={`${inputClass} md:w-1/2`}
             >
               <option value="Layak">Layak</option>
               <option value="Tidak Layak">Tidak Layak</option>
               <option value="Layak Dengan Catatan">Layak Dengan Catatan</option>
             </select>
           </div>
+        </div>
 
-          <div className="md:col-span-2">
+        <SectionTitle>Catatan Pemeriksaan</SectionTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
             <LabelIkon icon={ClipboardList}>Temuan (jika ada)</LabelIkon>
             <textarea
               placeholder="Contoh: Kebocoran oli hidrolik pada silinder boom"
@@ -247,7 +273,7 @@ function InputData() {
             />
           </div>
 
-          <div className="md:col-span-2">
+          <div>
             <LabelIkon icon={ClipboardList}>Tindak Lanjut Perbaikan (jika ada)</LabelIkon>
             <textarea
               placeholder="Contoh: Sudah dilakukan penggantian seal hidrolik"
@@ -257,42 +283,63 @@ function InputData() {
               rows="3"
             />
           </div>
+        </div>
 
+        <SectionTitle>Lampiran</SectionTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <LabelIkon icon={ImagePlus}>Foto Temuan (opsional)</LabelIkon>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFotoChange}
-              className={`${inputClass} dark:file:text-white`}
-            />
+            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl px-4 py-5 cursor-pointer hover:border-yellow-400 dark:hover:border-yellow-500 transition-colors">
+              <ImagePlus size={22} className="text-gray-400" />
+              <span className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                {fotoBase64 ? "Klik untuk ganti foto" : "Klik untuk pilih foto"}
+              </span>
+              <input type="file" accept="image/*" onChange={handleFotoChange} className="hidden" />
+            </label>
             {fotoBase64 && (
-              <img src={fotoBase64} alt="Preview" className="mt-2 h-24 rounded border border-gray-300 dark:border-gray-700" />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="relative mt-2 inline-block"
+              >
+                <img src={fotoBase64} alt="Preview" className="h-24 rounded-xl border border-gray-300 dark:border-gray-700" />
+                <button
+                  onClick={() => setFotoBase64(null)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"
+                >
+                  <X size={12} />
+                </button>
+              </motion.div>
             )}
           </div>
 
           <div>
             <LabelIkon icon={FileUp}>Upload File PDF (opsional)</LabelIkon>
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={handlePdfChange}
-              className={`${inputClass} dark:file:text-white`}
-            />
+            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl px-4 py-5 cursor-pointer hover:border-yellow-400 dark:hover:border-yellow-500 transition-colors">
+              <FileUp size={22} className="text-gray-400" />
+              <span className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                {pdfNama ? "Klik untuk ganti PDF" : "Klik untuk pilih PDF"}
+              </span>
+              <input type="file" accept="application/pdf" onChange={handlePdfChange} className="hidden" />
+            </label>
             {pdfNama && (
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                <FileText size={14} /> {pdfNama}
-              </p>
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-2 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-1.5 w-fit"
+              >
+                <FileText size={14} className="text-yellow-500" /> {pdfNama}
+              </motion.p>
             )}
           </div>
         </div>
 
         <motion.button
-          whileHover={{ scale: 1.03 }}
+          whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={tambahUnit}
           disabled={sedangSimpan}
-          className="bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-200 text-gray-900 px-4 py-2 rounded font-semibold flex items-center gap-2"
+          className="mt-8 w-full md:w-auto bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 disabled:opacity-50 text-gray-900 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-yellow-400/25"
         >
           <PackagePlus size={18} />
           {sedangSimpan ? "Menyimpan..." : "Tambah Unit"}
