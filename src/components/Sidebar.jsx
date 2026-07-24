@@ -79,12 +79,10 @@ function Sidebar() {
         transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
         ${menuTerbuka ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
       `}>
-        <div className="hidden md:flex flex-col items-center mb-6 pb-4 border-b border-gray-700">
+        <div className="flex flex-col items-center mb-6 pb-4 border-b border-gray-700">
           <img src={logoEsdm} alt="Logo ESDM" className="w-12 h-12 object-contain mb-2" />
           <h1 className="text-white text-sm font-bold text-center">Pengelolaan SPIP</h1>
         </div>
-
-        <div className="md:hidden h-14"></div>
 
         <nav className="flex flex-col gap-1 flex-1">
           {menuItems.map((item) => {
