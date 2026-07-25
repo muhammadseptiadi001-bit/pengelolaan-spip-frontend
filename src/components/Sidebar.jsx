@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   FilePlus,
   ClipboardList,
+  History,
   Menu,
   X,
   Moon,
@@ -26,6 +27,7 @@ function Sidebar() {
     { path: "/", label: "Dashboard", icon: LayoutDashboard },
     { path: "/input", label: "Input Data", icon: FilePlus },
     { path: "/data", label: "Data SPIP", icon: ClipboardList },
+    { path: "/riwayat", label: "Riwayat", icon: History },
   ]
 
   function handleLogout() {

@@ -6,6 +6,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import InputData from './pages/InputData'
 import DataSPIP from './pages/DataSPIP'
+import Riwayat from './pages/Riwayat'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="input" element={<InputData />} />
           <Route path="data" element={<DataSPIP />} />
+          <Route path="riwayat" element={<Riwayat />} />
         </Route>
       </Routes>
     </BrowserRouter>

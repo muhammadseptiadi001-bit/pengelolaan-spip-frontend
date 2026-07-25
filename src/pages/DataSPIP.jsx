@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import * as XLSX from 'xlsx'
 import {
   Download, CheckCircle2, XCircle, AlertCircle, Clock, ImageIcon, FileText, Trash2,
-  ClipboardList, ChevronLeft, ChevronRight, Printer, Tag, MoveHorizontal
+  ClipboardList, ChevronLeft, ChevronRight, Printer, Tag, MoveHorizontal, History, X, ArrowRight
 } from 'lucide-react'
 import {
   API_URL, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT, SEMUA_JENIS_ALAT,
@@ -26,12 +26,28 @@ function ikonStatusKelayakan(status) {
   return <AlertCircle size={16} className="text-yellow-600 dark:text-yellow-400" />
 }
 
+function warnaBadgeStatus(status) {
+  if (status === "Layak") return "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+  if (status === "Tidak Layak") return "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+  return "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
+}
+
+function formatTanggalWaktu(tanggal) {
+  return new Date(tanggal).toLocaleString("id-ID", {
+    day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
+  })
+}
+
 function DataSPIP() {
   const [daftarUnit, setDaftarUnit] = useState([])
   const [fotoDipilih, setFotoDipilih] = useState(null)
   const [halaman, setHalaman] = useState(1)
   const [bisaScrollKanan, setBisaScrollKanan] = useState(true)
   const scrollRef = useRef(null)
+
+  const [unitRiwayatDipilih, setUnitRiwayatDipilih] = useState(null)
+  const [daftarRiwayatUnit, setDaftarRiwayatUnit] = useState([])
+  const [sedangMuatRiwayat, setSedangMuatRiwayat] = useState(false)
 
   const [filter, setFilter] = useState({
     perusahaan: "",
@@ -136,6 +152,26 @@ function DataSPIP() {
     } catch (err) {
       tampilkanToast("Gagal menghapus data. Pastikan server backend sedang berjalan.", "gagal")
     }
+  }
+
+  async function lihatRiwayat(unit) {
+    setUnitRiwayatDipilih(unit)
+    setSedangMuatRiwayat(true)
+    setDaftarRiwayatUnit([])
+    try {
+      const res = await apiFetch(`${API_URL.replace('/api/unit', '')}/api/riwayat/unit/${unit.id}`)
+      const data = await res.json()
+      setDaftarRiwayatUnit(data)
+    } catch (err) {
+      tampilkanToast("Gagal mengambil riwayat unit.", "gagal")
+    } finally {
+      setSedangMuatRiwayat(false)
+    }
+  }
+
+  function tutupRiwayat() {
+    setUnitRiwayatDipilih(null)
+    setDaftarRiwayatUnit([])
   }
 
   function cetakUnit(unit) {
@@ -553,6 +589,15 @@ function DataSPIP() {
                                 <motion.button
                                   whileHover={{ scale: 1.08 }}
                                   whileTap={{ scale: 0.95 }}
+                                  onClick={() => lihatRiwayat(unit)}
+                                  title="Lihat riwayat perubahan status unit ini"
+                                  className="bg-gray-100 hover:bg-gray-700 text-gray-600 hover:text-white dark:bg-gray-800 dark:hover:bg-gray-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                                >
+                                  <History size={13} /> Riwayat
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.08 }}
+                                  whileTap={{ scale: 0.95 }}
                                   onClick={() => cetakUnit(unit)}
                                   title="Cetak laporan unit ini"
                                   className="bg-blue-50 hover:bg-blue-500 text-blue-600 hover:text-white dark:bg-blue-950 dark:hover:bg-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
@@ -631,6 +676,65 @@ function DataSPIP() {
           <img src={fotoDipilih} alt="Foto Temuan" className="max-w-2xl max-h-[80vh] rounded-2xl shadow-2xl" />
         </div>
       )}
+
+      <AnimatePresence>
+        {unitRiwayatDipilih && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={tutupRiwayat}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                    <History size={18} /> Riwayat Status
+                  </h3>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    {unitRiwayatDipilih.namaUnit} ({unitRiwayatDipilih.nomorUnit})
+                  </p>
+                </div>
+                <button onClick={tutupRiwayat} className="text-gray-400 hover:text-gray-700 dark:hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+
+              {sedangMuatRiwayat ? (
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-14 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                  ))}
+                </div>
+              ) : daftarRiwayatUnit.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">Belum ada perubahan status yang tercatat untuk unit ini.</p>
+              ) : (
+                <div className="space-y-2">
+                  {daftarRiwayatUnit.map((riwayat) => (
+                    <div key={riwayat.id} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                        Diubah oleh <span className="font-medium text-gray-600 dark:text-gray-300">{riwayat.diubahOleh}</span> · {formatTanggalWaktu(riwayat.diubahPada)}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${warnaBadgeStatus(riwayat.statusLama)}`}>{riwayat.statusLama}</span>
+                        <ArrowRight size={14} className="text-gray-400" />
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${warnaBadgeStatus(riwayat.statusBaru)}`}>{riwayat.statusBaru}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
