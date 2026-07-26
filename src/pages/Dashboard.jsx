@@ -77,6 +77,7 @@ function Dashboard() {
   const [daftarUnit, setDaftarUnit] = useState([])
   const [sedangMuat, setSedangMuat] = useState(true)
   const [filterJenisSpip, setFilterJenisSpip] = useState("Semua")
+  const [filterPerusahaan, setFilterPerusahaan] = useState("Semua")
   const [statusKirim, setStatusKirim] = useState("")
   const [sedangKirim, setSedangKirim] = useState(false)
 
@@ -112,10 +113,21 @@ function Dashboard() {
     }
   }
 
+  const daftarPerusahaan = useMemo(() => {
+    const nama = new Set()
+    daftarUnit.forEach((unit) => {
+      if (unit.namaPerusahaan) nama.add(unit.namaPerusahaan)
+    })
+    return Array.from(nama).sort()
+  }, [daftarUnit])
+
   const dataTerfilter = useMemo(() => {
-    if (filterJenisSpip === "Semua") return daftarUnit
-    return daftarUnit.filter((unit) => unit.jenisSpip === filterJenisSpip)
-  }, [daftarUnit, filterJenisSpip])
+    return daftarUnit.filter((unit) => {
+      const cocokJenisSpip = filterJenisSpip === "Semua" || unit.jenisSpip === filterJenisSpip
+      const cocokPerusahaan = filterPerusahaan === "Semua" || unit.namaPerusahaan === filterPerusahaan
+      return cocokJenisSpip && cocokPerusahaan
+    })
+  }, [daftarUnit, filterJenisSpip, filterPerusahaan])
 
   const dataStatusKelayakan = useMemo(() => {
     const hitung = { "Layak": 0, "Tidak Layak": 0, "Layak Dengan Catatan": 0 }
@@ -169,6 +181,20 @@ function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Dashboard</h1>
 
         <div className="flex flex-col md:flex-row gap-4 md:items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter Perusahaan</label>
+            <select
+              value={filterPerusahaan}
+              onChange={(e) => setFilterPerusahaan(e.target.value)}
+              className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2"
+            >
+              <option value="Semua">Semua</option>
+              {daftarPerusahaan.map((nama) => (
+                <option key={nama} value={nama}>{nama}</option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter Kategori SPIP</label>
             <select
