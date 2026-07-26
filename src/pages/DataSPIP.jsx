@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import {
   Download, CheckCircle2, XCircle, AlertCircle, Clock, ImageIcon, FileText, Trash2,
   ClipboardList, ChevronLeft, ChevronRight, Printer, Tag, MoveHorizontal, History, X, ArrowRight
@@ -43,6 +43,7 @@ function DataSPIP() {
   const [fotoDipilih, setFotoDipilih] = useState(null)
   const [halaman, setHalaman] = useState(1)
   const [bisaScrollKanan, setBisaScrollKanan] = useState(true)
+  const [sedangExport, setSedangExport] = useState(false)
   const scrollRef = useRef(null)
 
   const [unitRiwayatDipilih, setUnitRiwayatDipilih] = useState(null)
@@ -364,29 +365,120 @@ function DataSPIP() {
     setHalaman((h) => Math.min(totalHalaman, h + 1))
   }
 
-  function exportExcel() {
-    const dataUntukExcel = dataTerfilter.map((unit) => {
-      const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
-      return {
-        "Nama Perusahaan": unit.namaPerusahaan,
-        "Kategori SPIP": unit.jenisSpip,
-        "Nama Unit": unit.namaUnit,
-        "Jenis Alat": unit.jenisAlat,
-        "Nomor Unit": unit.nomorUnit,
-        "Tanggal Uji Terakhir": formatTanggal(new Date(unit.tanggalUjiTerakhir)),
-        "Jangka Waktu (Bulan)": unit.jangkaWaktuBulan,
-        "Jatuh Tempo": formatTanggal(jatuhTempo),
-        "Sisa Waktu": hitungSisaDetail(jatuhTempo),
-        "Status Kelayakan": unit.statusKelayakan,
-        "Temuan": unit.temuan || "-",
-        "Tindak Lanjut Perbaikan": unit.tindakLanjut || "-",
-      }
-    })
+  async function exportExcel() {
+    setSedangExport(true)
+    try {
+      const workbook = new ExcelJS.Workbook()
+      workbook.creator = "Pengelolaan SPIP"
+      workbook.created = new Date()
 
-    const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Data SPIP")
-    XLSX.writeFile(workbook, "data-pengelolaan-spip.xlsx")
+      const sheet = workbook.addWorksheet("Data SPIP", {
+        views: [{ state: "frozen", ySplit: 1 }],
+      })
+
+      sheet.columns = [
+        { header: "Nama Perusahaan", key: "namaPerusahaan", width: 24 },
+        { header: "Kategori SPIP", key: "jenisSpip", width: 18 },
+        { header: "Nama Unit", key: "namaUnit", width: 20 },
+        { header: "Jenis Alat", key: "jenisAlat", width: 24 },
+        { header: "Nomor Unit", key: "nomorUnit", width: 16 },
+        { header: "Tanggal Uji Terakhir", key: "tanggalUji", width: 18 },
+        { header: "Jangka Waktu (Bulan)", key: "jangkaWaktu", width: 16 },
+        { header: "Jatuh Tempo", key: "jatuhTempo", width: 18 },
+        { header: "Sisa Waktu", key: "sisaWaktu", width: 22 },
+        { header: "Status Kelayakan", key: "statusKelayakan", width: 18 },
+        { header: "Temuan", key: "temuan", width: 32 },
+        { header: "Tindak Lanjut Perbaikan", key: "tindakLanjut", width: 32 },
+      ]
+
+      dataTerfilter.forEach((unit) => {
+        const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
+        sheet.addRow({
+          namaPerusahaan: unit.namaPerusahaan,
+          jenisSpip: unit.jenisSpip,
+          namaUnit: unit.namaUnit,
+          jenisAlat: unit.jenisAlat,
+          nomorUnit: unit.nomorUnit,
+          tanggalUji: formatTanggal(new Date(unit.tanggalUjiTerakhir)),
+          jangkaWaktu: unit.jangkaWaktuBulan,
+          jatuhTempo: formatTanggal(jatuhTempo),
+          sisaWaktu: hitungSisaDetail(jatuhTempo),
+          statusKelayakan: unit.statusKelayakan,
+          temuan: unit.temuan || "-",
+          tindakLanjut: unit.tindakLanjut || "-",
+        })
+      })
+
+      const headerRow = sheet.getRow(1)
+      headerRow.height = 24
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 }
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F2937" } }
+        cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true }
+        cell.border = {
+          top: { style: "thin", color: { argb: "FF374151" } },
+          left: { style: "thin", color: { argb: "FF374151" } },
+          bottom: { style: "thin", color: { argb: "FF374151" } },
+          right: { style: "thin", color: { argb: "FF374151" } },
+        }
+      })
+
+      const warnaStatus = {
+        "Layak": "FFDCFCE7",
+        "Tidak Layak": "FFFEE2E2",
+        "Layak Dengan Catatan": "FFFEF9C3",
+      }
+      const warnaTeksStatus = {
+        "Layak": "FF15803D",
+        "Tidak Layak": "FFB91C1C",
+        "Layak Dengan Catatan": "FFA16207",
+      }
+
+      sheet.eachRow((row, nomorBaris) => {
+        if (nomorBaris === 1) return
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: "thin", color: { argb: "FFE5E7EB" } },
+            left: { style: "thin", color: { argb: "FFE5E7EB" } },
+            bottom: { style: "thin", color: { argb: "FFE5E7EB" } },
+            right: { style: "thin", color: { argb: "FFE5E7EB" } },
+          }
+          cell.alignment = { vertical: "middle", wrapText: true }
+        })
+
+        const selStatus = row.getCell("statusKelayakan")
+        const status = selStatus.value
+        if (warnaStatus[status]) {
+          selStatus.fill = { type: "pattern", pattern: "solid", fgColor: { argb: warnaStatus[status] } }
+          selStatus.font = { bold: true, color: { argb: warnaTeksStatus[status] } }
+          selStatus.alignment = { vertical: "middle", horizontal: "center" }
+        }
+
+        if (nomorBaris % 2 === 0) {
+          row.eachCell((cell) => {
+            if (cell.address !== selStatus.address) {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF9FAFB" } }
+            }
+          })
+        }
+      })
+
+      const buffer = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `data-pengelolaan-spip-${new Date().toISOString().slice(0, 10)}.xlsx`
+      link.click()
+      window.URL.revokeObjectURL(url)
+
+      tampilkanToast("File Excel berhasil diunduh.", "sukses")
+    } catch (err) {
+      console.error(err)
+      tampilkanToast("Gagal membuat file Excel.", "gagal")
+    } finally {
+      setSedangExport(false)
+    }
   }
 
   const filterInputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-2.5 py-1.5 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
@@ -411,9 +503,10 @@ function DataSPIP() {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={exportExcel}
-            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-md shadow-green-500/20"
+            disabled={sedangExport}
+            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-60 text-white px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-md shadow-green-500/20"
           >
-            <Download size={16} /> Download Excel
+            <Download size={16} /> {sedangExport ? "Membuat file..." : "Download Excel"}
           </motion.button>
         </div>
 
