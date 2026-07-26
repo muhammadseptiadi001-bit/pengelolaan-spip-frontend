@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ExcelJS from 'exceljs'
 import {
-  Download, CheckCircle2, XCircle, AlertCircle, Clock, ImageIcon, FileText, Trash2,
+  Download, Upload, CheckCircle2, XCircle, AlertCircle, Clock, ImageIcon, FileText, Trash2,
   ClipboardList, ChevronLeft, ChevronRight, Printer, Tag, MoveHorizontal, History, X, ArrowRight
 } from 'lucide-react'
 import {
@@ -38,13 +38,25 @@ function formatTanggalWaktu(tanggal) {
   })
 }
 
+function parseTanggalIndo(teks) {
+  if (!teks) return null
+  const bagian = String(teks).trim().split('/')
+  if (bagian.length !== 3) return null
+  const [hari, bulan, tahun] = bagian
+  const hariPad = hari.padStart(2, "0")
+  const bulanPad = bulan.padStart(2, "0")
+  return `${tahun}-${bulanPad}-${hariPad}`
+}
+
 function DataSPIP() {
   const [daftarUnit, setDaftarUnit] = useState([])
   const [fotoDipilih, setFotoDipilih] = useState(null)
   const [halaman, setHalaman] = useState(1)
   const [bisaScrollKanan, setBisaScrollKanan] = useState(true)
   const [sedangExport, setSedangExport] = useState(false)
+  const [sedangImport, setSedangImport] = useState(false)
   const scrollRef = useRef(null)
+  const inputFileRef = useRef(null)
 
   const [unitRiwayatDipilih, setUnitRiwayatDipilih] = useState(null)
   const [daftarRiwayatUnit, setDaftarRiwayatUnit] = useState([])
@@ -481,6 +493,91 @@ function DataSPIP() {
     }
   }
 
+  function klikTombolUpload() {
+    inputFileRef.current?.click()
+  }
+
+  async function handleFileExcel(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    setSedangImport(true)
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const workbook = new ExcelJS.Workbook()
+      await workbook.xlsx.load(arrayBuffer)
+      const sheet = workbook.worksheets[0]
+
+      if (!sheet) throw new Error("File Excel tidak punya sheet data")
+
+      const daftarUnitBaru = []
+
+      sheet.eachRow({ includeEmpty: false }, (row, nomorBaris) => {
+        if (nomorBaris === 1) return
+
+        const namaPerusahaan = row.getCell(1).value?.toString().trim()
+        const jenisSpip = row.getCell(2).value?.toString().trim()
+        const namaUnit = row.getCell(3).value?.toString().trim()
+        const jenisAlat = row.getCell(4).value?.toString().trim()
+        const nomorUnit = row.getCell(5).value?.toString().trim()
+        const tanggalMentah = row.getCell(6).value
+        const jangkaWaktuMentah = row.getCell(7).value
+        const statusKelayakan = row.getCell(10).value?.toString().trim()
+        const temuan = row.getCell(11).value?.toString().trim()
+        const tindakLanjut = row.getCell(12).value?.toString().trim()
+
+        if (!namaPerusahaan && !nomorUnit) return
+
+        let tanggalUjiTerakhir = null
+        if (tanggalMentah instanceof Date) {
+          tanggalUjiTerakhir = tanggalMentah.toISOString().slice(0, 10)
+        } else if (typeof tanggalMentah === "string") {
+          tanggalUjiTerakhir = parseTanggalIndo(tanggalMentah)
+        }
+
+        daftarUnitBaru.push({
+          namaPerusahaan,
+          jenisSpip,
+          namaUnit,
+          jenisAlat,
+          nomorUnit,
+          tanggalUjiTerakhir,
+          jangkaWaktuBulan: Number(jangkaWaktuMentah),
+          statusKelayakan,
+          temuan: temuan === "-" ? "" : temuan,
+          tindakLanjut: tindakLanjut === "-" ? "" : tindakLanjut,
+        })
+      })
+
+      if (daftarUnitBaru.length === 0) {
+        tampilkanToast("Tidak ada baris data yang bisa dibaca dari file ini.", "gagal")
+        return
+      }
+
+      const res = await apiFetch(`${API_URL}/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ daftarUnit: daftarUnitBaru }),
+      })
+
+      const hasil = await res.json()
+      if (!res.ok) throw new Error(hasil.error || "Gagal mengimpor data")
+
+      tampilkanToast(hasil.pesan, hasil.gagal.length > 0 ? "gagal" : "sukses")
+      if (hasil.gagal.length > 0) {
+        console.warn("Baris yang gagal diimpor:", hasil.gagal)
+      }
+
+      ambilData()
+    } catch (err) {
+      console.error(err)
+      tampilkanToast("Gagal membaca atau mengimpor file Excel. Pastikan format kolomnya sesuai hasil Download Excel.", "gagal")
+    } finally {
+      setSedangImport(false)
+      e.target.value = ""
+    }
+  }
+
   const filterInputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-2.5 py-1.5 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
 
   return (
@@ -499,15 +596,34 @@ function DataSPIP() {
             </div>
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={exportExcel}
-            disabled={sedangExport}
-            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-60 text-white px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-md shadow-green-500/20"
-          >
-            <Download size={16} /> {sedangExport ? "Membuat file..." : "Download Excel"}
-          </motion.button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              ref={inputFileRef}
+              type="file"
+              accept=".xlsx"
+              onChange={handleFileExcel}
+              className="hidden"
+            />
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={klikTombolUpload}
+              disabled={sedangImport}
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 disabled:opacity-60 text-white px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-md shadow-blue-500/20"
+            >
+              <Upload size={16} /> {sedangImport ? "Mengimpor..." : "Upload Excel"}
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={exportExcel}
+              disabled={sedangExport}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-60 text-white px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-md shadow-green-500/20"
+            >
+              <Download size={16} /> {sedangExport ? "Membuat file..." : "Download Excel"}
+            </motion.button>
+          </div>
         </div>
 
         {daftarUnit.length === 0 ? (
