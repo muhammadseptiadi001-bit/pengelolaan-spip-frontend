@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileText, PackagePlus, Building2, Tags, Wrench, Hash,
   CalendarDays, Timer, ShieldCheck, ClipboardList,
-  ImagePlus, FileUp, X
+  ImagePlus, FileUp, X, Loader2
 } from 'lucide-react'
-import { API_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT } from '../utils/spipHelpers'
+import { API_URL, UPLOAD_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT } from '../utils/spipHelpers'
 import { ambilUser } from '../utils/auth'
 import { tampilkanToast } from '../utils/toast'
 import { apiFetch } from '../utils/apiFetch'
@@ -38,6 +38,24 @@ function tanggalHariIni() {
   return `${tahun}-${bulan}-${tanggal}`
 }
 
+async function uploadFileKeServer(file, tipe) {
+  const formData = new FormData()
+  formData.append("file", file)
+  formData.append("tipe", tipe)
+
+  const res = await apiFetch(UPLOAD_URL, {
+    method: "POST",
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || "Gagal mengupload file")
+  }
+
+  return res.json()
+}
+
 function InputData() {
   const user = ambilUser()
 
@@ -55,6 +73,8 @@ function InputData() {
   const [pdfNama, setPdfNama] = useState("")
   const [pdfData, setPdfData] = useState(null)
   const [sedangSimpan, setSedangSimpan] = useState(false)
+  const [sedangUploadFoto, setSedangUploadFoto] = useState(false)
+  const [sedangUploadPdf, setSedangUploadPdf] = useState(false)
   const [daftarNomorUnitAda, setDaftarNomorUnitAda] = useState([])
 
   useEffect(() => {
@@ -77,23 +97,37 @@ function InputData() {
     setJenisAlat(PILIHAN_JENIS_ALAT[kategoriBaru][0])
   }
 
-  function handleFotoChange(e) {
+  async function handleFotoChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onloadend = () => setFotoBase64(reader.result)
-    reader.readAsDataURL(file)
+
+    setSedangUploadFoto(true)
+    try {
+      const hasil = await uploadFileKeServer(file, "foto")
+      setFotoBase64(hasil.url)
+    } catch (err) {
+      tampilkanToast(err.message || "Gagal mengupload foto.", "gagal")
+    } finally {
+      setSedangUploadFoto(false)
+      e.target.value = ""
+    }
   }
 
-  function handlePdfChange(e) {
+  async function handlePdfChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setPdfData(reader.result)
+
+    setSedangUploadPdf(true)
+    try {
+      const hasil = await uploadFileKeServer(file, "pdf")
+      setPdfData(hasil.url)
       setPdfNama(file.name)
+    } catch (err) {
+      tampilkanToast(err.message || "Gagal mengupload PDF.", "gagal")
+    } finally {
+      setSedangUploadPdf(false)
+      e.target.value = ""
     }
-    reader.readAsDataURL(file)
   }
 
   async function tambahUnit() {
@@ -109,6 +143,11 @@ function InputData() {
 
     if (daftarNomorUnitAda.includes(nomorUnit.toLowerCase().trim())) {
       tampilkanToast(`Nomor Unit "${nomorUnit}" sudah terdaftar. Gunakan nomor unit yang berbeda.`, "gagal")
+      return
+    }
+
+    if (sedangUploadFoto || sedangUploadPdf) {
+      tampilkanToast("Tunggu proses upload file selesai terlebih dahulu.", "gagal")
       return
     }
 
@@ -324,14 +363,18 @@ function InputData() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <LabelIkon icon={ImagePlus}>Foto Temuan (opsional)</LabelIkon>
-            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl px-4 py-5 cursor-pointer hover:border-yellow-400 dark:hover:border-yellow-500 transition-colors">
-              <ImagePlus size={22} className="text-gray-400" />
+            <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl px-4 py-5 transition-colors ${sedangUploadFoto ? "opacity-60 cursor-wait" : "cursor-pointer hover:border-yellow-400 dark:hover:border-yellow-500"}`}>
+              {sedangUploadFoto ? (
+                <Loader2 size={22} className="text-yellow-500 animate-spin" />
+              ) : (
+                <ImagePlus size={22} className="text-gray-400" />
+              )}
               <span className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                {fotoBase64 ? "Klik untuk ganti foto" : "Klik untuk pilih foto"}
+                {sedangUploadFoto ? "Mengupload foto..." : fotoBase64 ? "Klik untuk ganti foto" : "Klik untuk pilih foto"}
               </span>
-              <input type="file" accept="image/*" onChange={handleFotoChange} className="hidden" />
+              <input type="file" accept="image/*" onChange={handleFotoChange} disabled={sedangUploadFoto} className="hidden" />
             </label>
-            {fotoBase64 && (
+            {fotoBase64 && !sedangUploadFoto && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -350,14 +393,18 @@ function InputData() {
 
           <div>
             <LabelIkon icon={FileUp}>Upload File PDF (opsional)</LabelIkon>
-            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl px-4 py-5 cursor-pointer hover:border-yellow-400 dark:hover:border-yellow-500 transition-colors">
-              <FileUp size={22} className="text-gray-400" />
+            <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl px-4 py-5 transition-colors ${sedangUploadPdf ? "opacity-60 cursor-wait" : "cursor-pointer hover:border-yellow-400 dark:hover:border-yellow-500"}`}>
+              {sedangUploadPdf ? (
+                <Loader2 size={22} className="text-yellow-500 animate-spin" />
+              ) : (
+                <FileUp size={22} className="text-gray-400" />
+              )}
               <span className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                {pdfNama ? "Klik untuk ganti PDF" : "Klik untuk pilih PDF"}
+                {sedangUploadPdf ? "Mengupload PDF..." : pdfNama ? "Klik untuk ganti PDF" : "Klik untuk pilih PDF"}
               </span>
-              <input type="file" accept="application/pdf" onChange={handlePdfChange} className="hidden" />
+              <input type="file" accept="application/pdf" onChange={handlePdfChange} disabled={sedangUploadPdf} className="hidden" />
             </label>
-            {pdfNama && (
+            {pdfNama && !sedangUploadPdf && (
               <motion.p
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -373,7 +420,7 @@ function InputData() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={tambahUnit}
-          disabled={sedangSimpan}
+          disabled={sedangSimpan || sedangUploadFoto || sedangUploadPdf}
           className="mt-8 w-full md:w-auto bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 disabled:opacity-50 text-gray-900 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-yellow-400/25"
         >
           <PackagePlus size={18} />

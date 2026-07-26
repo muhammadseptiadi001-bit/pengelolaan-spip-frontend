@@ -813,15 +813,17 @@ function DataSPIP() {
                                 >
                                   <Printer size={13} /> Cetak
                                 </motion.button>
-                                <motion.button
-                                  whileHover={{ scale: 1.08 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={() => cetakStiker(unit)}
-                                  title="Cetak stiker QR untuk ditempel di unit"
-                                  className="bg-purple-50 hover:bg-purple-500 text-purple-600 hover:text-white dark:bg-purple-950 dark:hover:bg-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                                >
-                                  <Tag size={13} /> Stiker
-                                </motion.button>
+                                {unit.statusKelayakan === "Layak" && (
+                                  <motion.button
+                                    whileHover={{ scale: 1.08 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => cetakStiker(unit)}
+                                    title="Cetak stiker QR untuk ditempel di unit"
+                                    className="bg-purple-50 hover:bg-purple-500 text-purple-600 hover:text-white dark:bg-purple-950 dark:hover:bg-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                                  >
+                                    <Tag size={13} /> Stiker
+                                  </motion.button>
+                                )}
                                 <motion.button
                                   whileHover={{ scale: 1.08 }}
                                   whileTap={{ scale: 0.95 }}
