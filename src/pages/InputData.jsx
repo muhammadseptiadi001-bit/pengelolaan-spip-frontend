@@ -13,8 +13,8 @@ import { apiFetch } from '../utils/apiFetch'
 function LabelIkon({ icon: Icon, children }) {
   return (
     <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-      <span className="p-1 rounded-md bg-yellow-50 dark:bg-yellow-950">
-        <Icon size={13} className="text-yellow-600 dark:text-yellow-400" />
+      <span className="p-1 rounded-md bg-blue-50 dark:bg-blue-950">
+        <Icon size={13} className="text-blue-600 dark:text-blue-400" />
       </span>
       {children}
     </label>
@@ -24,7 +24,7 @@ function LabelIkon({ icon: Icon, children }) {
 function SectionTitle({ children }) {
   return (
     <div className="flex items-center gap-2 mb-3 mt-6 first:mt-0">
-      <div className="h-4 w-1 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-full"></div>
+      <div className="h-4 w-1 bg-gradient-to-b from-blue-400 to-blue-600 rounded-full"></div>
       <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{children}</h3>
     </div>
   )
@@ -200,7 +200,7 @@ function InputData() {
     }
   }
 
-  const inputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl px-3.5 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400"
+  const inputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl px-3.5 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400"
 
   return (
     <div>
@@ -213,7 +213,7 @@ function InputData() {
         className="bg-white dark:bg-gray-900 p-6 md:p-8 rounded-2xl shadow-sm dark:border dark:border-gray-800"
       >
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 shadow-lg shadow-yellow-400/20">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg shadow-blue-400/20">
             <PackagePlus size={20} className="text-white" />
           </div>
           <div>
@@ -363,9 +363,9 @@ function InputData() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <LabelIkon icon={ImagePlus}>Foto Temuan (opsional)</LabelIkon>
-            <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl px-4 py-5 transition-colors ${sedangUploadFoto ? "opacity-60 cursor-wait" : "cursor-pointer hover:border-yellow-400 dark:hover:border-yellow-500"}`}>
+            <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl px-4 py-5 transition-colors ${sedangUploadFoto ? "opacity-60 cursor-wait" : "cursor-pointer hover:border-blue-400 dark:hover:border-blue-500"}`}>
               {sedangUploadFoto ? (
-                <Loader2 size={22} className="text-yellow-500 animate-spin" />
+                <Loader2 size={22} className="text-blue-500 animate-spin" />
               ) : (
                 <ImagePlus size={22} className="text-gray-400" />
               )}
@@ -393,9 +393,9 @@ function InputData() {
 
           <div>
             <LabelIkon icon={FileUp}>Upload File PDF (opsional)</LabelIkon>
-            <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl px-4 py-5 transition-colors ${sedangUploadPdf ? "opacity-60 cursor-wait" : "cursor-pointer hover:border-yellow-400 dark:hover:border-yellow-500"}`}>
+            <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl px-4 py-5 transition-colors ${sedangUploadPdf ? "opacity-60 cursor-wait" : "cursor-pointer hover:border-blue-400 dark:hover:border-blue-500"}`}>
               {sedangUploadPdf ? (
-                <Loader2 size={22} className="text-yellow-500 animate-spin" />
+                <Loader2 size={22} className="text-blue-500 animate-spin" />
               ) : (
                 <FileUp size={22} className="text-gray-400" />
               )}
@@ -410,7 +410,7 @@ function InputData() {
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-2 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-1.5 w-fit"
               >
-                <FileText size={14} className="text-yellow-500" /> {pdfNama}
+                <FileText size={14} className="text-blue-500" /> {pdfNama}
               </motion.p>
             )}
           </div>
@@ -421,7 +421,7 @@ function InputData() {
           whileTap={{ scale: 0.97 }}
           onClick={tambahUnit}
           disabled={sedangSimpan || sedangUploadFoto || sedangUploadPdf}
-          className="mt-8 w-full md:w-auto bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 disabled:opacity-50 text-gray-900 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-yellow-400/25"
+          className="mt-8 w-full md:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
         >
           <PackagePlus size={18} />
           {sedangSimpan ? "Menyimpan..." : "Tambah Unit"}

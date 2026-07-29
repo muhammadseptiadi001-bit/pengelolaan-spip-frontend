@@ -14,6 +14,16 @@ import { apiFetch } from '../utils/apiFetch'
 
 const ITEM_PER_HALAMAN = 10
 
+const FILTER_AWAL = {
+  perusahaan: "",
+  jenisSpip: "Semua",
+  namaUnit: "",
+  jenisAlat: "Semua",
+  nomorUnit: "",
+  statusWaktu: "Semua",
+  statusKelayakan: "Semua",
+}
+
 function ikonStatusWaktu(label) {
   if (label === "Aman") return <CheckCircle2 size={13} />
   if (label === "Mendekati Jatuh Tempo") return <Clock size={13} />
@@ -48,8 +58,25 @@ function parseTanggalIndo(teks) {
   return `${tahun}-${bulanPad}-${hariPad}`
 }
 
+// Susun query string dari filter aktif untuk dikirim ke backend
+function bangunQueryFilter(filter) {
+  const params = new URLSearchParams()
+  if (filter.perusahaan) params.set("perusahaan", filter.perusahaan)
+  if (filter.jenisSpip !== "Semua") params.set("jenisSpip", filter.jenisSpip)
+  if (filter.namaUnit) params.set("namaUnit", filter.namaUnit)
+  if (filter.jenisAlat !== "Semua") params.set("jenisAlat", filter.jenisAlat)
+  if (filter.nomorUnit) params.set("nomorUnit", filter.nomorUnit)
+  if (filter.statusWaktu !== "Semua") params.set("statusWaktu", filter.statusWaktu)
+  if (filter.statusKelayakan !== "Semua") params.set("statusKelayakan", filter.statusKelayakan)
+  return params
+}
+
 function DataSPIP() {
   const [daftarUnit, setDaftarUnit] = useState([])
+  const [totalData, setTotalData] = useState(0)
+  const [totalHalaman, setTotalHalaman] = useState(1)
+  const [sedangMuatData, setSedangMuatData] = useState(true)
+
   const [fotoDipilih, setFotoDipilih] = useState(null)
   const [halaman, setHalaman] = useState(1)
   const [bisaScrollKanan, setBisaScrollKanan] = useState(true)
@@ -57,24 +84,28 @@ function DataSPIP() {
   const [sedangImport, setSedangImport] = useState(false)
   const scrollRef = useRef(null)
   const inputFileRef = useRef(null)
+  const belumPernahMuat = useRef(true)
 
   const [unitRiwayatDipilih, setUnitRiwayatDipilih] = useState(null)
   const [daftarRiwayatUnit, setDaftarRiwayatUnit] = useState([])
   const [sedangMuatRiwayat, setSedangMuatRiwayat] = useState(false)
 
-  const [filter, setFilter] = useState({
-    perusahaan: "",
-    jenisSpip: "Semua",
-    namaUnit: "",
-    jenisAlat: "Semua",
-    nomorUnit: "",
-    statusWaktu: "Semua",
-    statusKelayakan: "Semua",
-  })
+  const [filter, setFilter] = useState(FILTER_AWAL)
 
+  // Ambil data dari backend tiap filter atau halaman berubah.
+  // Request pertama langsung jalan; perubahan berikutnya di-debounce 400ms
+  // supaya tidak nembak request tiap kali user mengetik di kolom filter.
   useEffect(() => {
-    ambilData()
-  }, [])
+    if (belumPernahMuat.current) {
+      belumPernahMuat.current = false
+      ambilData()
+      return
+    }
+    const timer = setTimeout(() => {
+      ambilData()
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [filter, halaman])
 
   useEffect(() => {
     setHalaman(1)
@@ -82,7 +113,7 @@ function DataSPIP() {
 
   useEffect(() => {
     cekScroll()
-  }, [daftarUnit, halaman])
+  }, [daftarUnit])
 
   function cekScroll() {
     const el = scrollRef.current
@@ -93,13 +124,33 @@ function DataSPIP() {
   }
 
   async function ambilData() {
+    setSedangMuatData(true)
     try {
-      const response = await apiFetch(API_URL)
-      const data = await response.json()
-      setDaftarUnit(data)
+      const params = bangunQueryFilter(filter)
+      params.set("halaman", halaman)
+      params.set("batas", ITEM_PER_HALAMAN)
+
+      const response = await apiFetch(`${API_URL}?${params.toString()}`)
+      const hasil = await response.json()
+      setDaftarUnit(hasil.data || [])
+      setTotalData(hasil.totalData || 0)
+      setTotalHalaman(hasil.totalHalaman || 1)
     } catch (err) {
       console.error(err)
+      tampilkanToast("Gagal mengambil data. Pastikan server backend sedang berjalan.", "gagal")
+    } finally {
+      setSedangMuatData(false)
     }
+  }
+
+  // Ambil SEMUA data yang cocok filter (tanpa pagination), khusus untuk export Excel
+  async function ambilSemuaUntukExport() {
+    const params = bangunQueryFilter(filter)
+    params.set("semua", "true")
+    const response = await apiFetch(`${API_URL}?${params.toString()}`)
+    if (!response.ok) throw new Error("Gagal mengambil data untuk export")
+    const hasil = await response.json()
+    return hasil.data || []
   }
 
   function updateFilter(kolom, nilai) {
@@ -345,30 +396,6 @@ function DataSPIP() {
     }
   }
 
-  const dataTerfilter = useMemo(() => {
-    return daftarUnit.filter((unit) => {
-      const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
-      const statusWaktuUnit = hitungStatusWaktu(jatuhTempo).label
-
-      const cocokPerusahaan = unit.namaPerusahaan?.toLowerCase().includes(filter.perusahaan.toLowerCase())
-      const cocokJenisSpip = filter.jenisSpip === "Semua" || unit.jenisSpip === filter.jenisSpip
-      const cocokNamaUnit = unit.namaUnit?.toLowerCase().includes(filter.namaUnit.toLowerCase())
-      const cocokJenisAlat = filter.jenisAlat === "Semua" || unit.jenisAlat === filter.jenisAlat
-      const cocokNomorUnit = unit.nomorUnit?.toLowerCase().includes(filter.nomorUnit.toLowerCase())
-      const cocokStatusWaktu = filter.statusWaktu === "Semua" || statusWaktuUnit === filter.statusWaktu
-      const cocokStatusKelayakan = filter.statusKelayakan === "Semua" || unit.statusKelayakan === filter.statusKelayakan
-
-      return cocokPerusahaan && cocokJenisSpip && cocokNamaUnit && cocokJenisAlat && cocokNomorUnit && cocokStatusWaktu && cocokStatusKelayakan
-    })
-  }, [daftarUnit, filter])
-
-  const totalHalaman = Math.max(1, Math.ceil(dataTerfilter.length / ITEM_PER_HALAMAN))
-
-  const dataHalamanIni = useMemo(() => {
-    const mulai = (halaman - 1) * ITEM_PER_HALAMAN
-    return dataTerfilter.slice(mulai, mulai + ITEM_PER_HALAMAN)
-  }, [dataTerfilter, halaman])
-
   function keHalamanSebelumnya() {
     setHalaman((h) => Math.max(1, h - 1))
   }
@@ -380,6 +407,8 @@ function DataSPIP() {
   async function exportExcel() {
     setSedangExport(true)
     try {
+      const dataUntukExport = await ambilSemuaUntukExport()
+
       const workbook = new ExcelJS.Workbook()
       workbook.creator = "Pengelolaan SPIP"
       workbook.created = new Date()
@@ -403,7 +432,7 @@ function DataSPIP() {
         { header: "Tindak Lanjut Perbaikan", key: "tindakLanjut", width: 32 },
       ]
 
-      dataTerfilter.forEach((unit) => {
+      dataUntukExport.forEach((unit) => {
         const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
         sheet.addRow({
           namaPerusahaan: unit.namaPerusahaan,
@@ -580,6 +609,8 @@ function DataSPIP() {
 
   const filterInputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-2.5 py-1.5 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
 
+  const tidakAdaDataSamaSekali = totalData === 0 && JSON.stringify(filter) === JSON.stringify(FILTER_AWAL) && !sedangMuatData
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Data SPIP</h1>
@@ -592,7 +623,9 @@ function DataSPIP() {
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-800 dark:text-white">Daftar SPIP</h2>
-              <p className="text-xs text-gray-400 dark:text-gray-500">{dataTerfilter.length} unit terdaftar</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                {sedangMuatData ? "Memuat data..." : `${totalData} unit terdaftar`}
+              </p>
             </div>
           </div>
 
@@ -626,7 +659,7 @@ function DataSPIP() {
           </div>
         </div>
 
-        {daftarUnit.length === 0 ? (
+        {tidakAdaDataSamaSekali ? (
           <p className="text-gray-500 dark:text-gray-400">Belum ada unit yang diinput.</p>
         ) : (
           <>
@@ -723,12 +756,14 @@ function DataSPIP() {
                     </tr>
                   </thead>
                   <tbody>
-                    {dataHalamanIni.length === 0 ? (
+                    {daftarUnit.length === 0 ? (
                       <tr>
-                        <td colSpan="15" className="py-6 text-center text-gray-500 dark:text-gray-400">Tidak ada data yang cocok dengan filter.</td>
+                        <td colSpan="15" className="py-6 text-center text-gray-500 dark:text-gray-400">
+                          {sedangMuatData ? "Memuat data..." : "Tidak ada data yang cocok dengan filter."}
+                        </td>
                       </tr>
                     ) : (
-                      dataHalamanIni.map((unit, index) => {
+                      daftarUnit.map((unit, index) => {
                         const jatuhTempo = hitungJatuhTempo(unit.tanggalUjiTerakhir, unit.jangkaWaktuBulan)
                         const statusWaktu = hitungStatusWaktu(jatuhTempo)
 
@@ -737,9 +772,8 @@ function DataSPIP() {
                             key={unit.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            whileHover={{ backgroundColor: "rgba(234, 179, 8, 0.05)" }}
                             transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.6) }}
-                            className="border-b border-gray-100 dark:border-gray-800/60 align-top text-gray-800 dark:text-gray-200"
+                            className="border-b border-gray-100 dark:border-gray-800/60 align-top text-gray-800 dark:text-gray-200 transition-colors duration-150 hover:bg-yellow-500/5"
                           >
                             <td className="py-2.5 px-3">{unit.namaPerusahaan}</td>
                             <td className="py-2.5 px-3">{unit.jenisSpip}</td>
@@ -849,7 +883,7 @@ function DataSPIP() {
 
             <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Menampilkan <span className="font-semibold text-gray-700 dark:text-gray-300">{dataTerfilter.length === 0 ? 0 : (halaman - 1) * ITEM_PER_HALAMAN + 1}–{Math.min(halaman * ITEM_PER_HALAMAN, dataTerfilter.length)}</span> dari <span className="font-semibold text-gray-700 dark:text-gray-300">{dataTerfilter.length}</span> data
+                Menampilkan <span className="font-semibold text-gray-700 dark:text-gray-300">{totalData === 0 ? 0 : (halaman - 1) * ITEM_PER_HALAMAN + 1}–{Math.min(halaman * ITEM_PER_HALAMAN, totalData)}</span> dari <span className="font-semibold text-gray-700 dark:text-gray-300">{totalData}</span> data
               </p>
               <div className="flex items-center gap-2">
                 <motion.button

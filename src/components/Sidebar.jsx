@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { ambilUser, logout } from '../utils/auth'
 import { ambilTema, toggleTema } from '../utils/theme'
-import logoEsdm from '../assets/logo-esdm.png'
+import logoSicool from '../assets/logo-sicool.png'
 
 function Sidebar() {
   const navigate = useNavigate()
@@ -47,14 +47,16 @@ function Sidebar() {
   return (
     <>
       {/* Tombol hamburger - hanya muncul di layar kecil */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-gray-900 border-b-2 border-yellow-400 px-4 py-3 flex items-center justify-between">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-b-2 border-blue-500 px-4 py-3 flex items-center justify-between transition-colors">
         <div className="flex items-center gap-2">
-          <img src={logoEsdm} alt="Logo ESDM" className="w-8 h-8 object-contain" />
-          <span className="text-white text-sm font-bold">Pengelolaan SPIP</span>
+          <div className="bg-white rounded-full p-1 flex items-center justify-center">
+            <img src={logoSicool} alt="Logo SICOOL" className="w-6 h-6 object-contain" />
+          </div>
+          <span className="text-gray-900 dark:text-white text-sm font-bold">Pengelolaan SPIP</span>
         </div>
         <button
           onClick={() => setMenuTerbuka(!menuTerbuka)}
-          className="text-white"
+          className="text-gray-900 dark:text-white"
         >
           {menuTerbuka ? <X size={26} /> : <Menu size={26} />}
         </button>
@@ -76,14 +78,16 @@ function Sidebar() {
 
       {/* Sidebar */}
       <div className={`
-        w-56 bg-gray-900 min-h-screen p-4 flex-shrink-0 flex flex-col border-r-2 border-yellow-400
+        w-56 bg-white dark:bg-gray-900 min-h-screen p-4 flex-shrink-0 flex flex-col border-r-2 border-blue-500
         fixed md:sticky top-0 left-0 h-screen z-40
-        transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
+        transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] transition-colors
         ${menuTerbuka ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
       `}>
-        <div className="flex flex-col items-center mb-6 pb-4 border-b border-gray-700">
-          <img src={logoEsdm} alt="Logo ESDM" className="w-12 h-12 object-contain mb-2" />
-          <h1 className="text-white text-sm font-bold text-center">Pengelolaan SPIP</h1>
+        <div className="flex flex-col items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="bg-white rounded-full p-2 mb-2 shadow-sm">
+            <img src={logoSicool} alt="Logo SICOOL" className="w-50 h-50 object-contain" />
+          </div>
+          <h1 className="text-gray-900 dark:text-white text-sm font-bold text-center">Pengelolaan SPIP</h1>
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
@@ -98,8 +102,8 @@ function Sidebar() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
                     isActive
-                      ? "bg-yellow-400 text-gray-900"
-                      : "text-gray-300 hover:bg-gray-800 hover:text-yellow-400"
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400"
                   }`
                 }
               >
@@ -110,21 +114,21 @@ function Sidebar() {
           })}
         </nav>
 
-        <div className="border-t border-gray-700 pt-4 mt-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
           <button
             onClick={handleToggleTema}
-            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-yellow-400 mb-2 flex items-center gap-2"
+            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 mb-2 flex items-center gap-2"
           >
             {tema === "light" ? <Moon size={16} /> : <Sun size={16} />}
             {tema === "light" ? "Mode Gelap" : "Mode Terang"}
           </button>
 
-          <p className="text-gray-300 text-sm px-2 mb-2 flex items-center gap-2">
+          <p className="text-gray-600 dark:text-gray-300 text-sm px-2 mb-2 flex items-center gap-2">
             <User size={16} /> {user?.nama}
           </p>
           <button
             onClick={handleLogout}
-            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-300 hover:bg-gray-800 flex items-center gap-2"
+            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-500 dark:text-red-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
           >
             <LogOut size={16} /> Logout
           </button>

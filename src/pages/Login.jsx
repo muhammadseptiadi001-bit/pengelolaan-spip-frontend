@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { simpanLogin } from '../utils/auth'
-import logoEsdm from '../assets/logo-esdm.png'
+import logoSicool from '../assets/logo-sicool.png'
 
 function Login() {
   const [username, setUsername] = useState("")
@@ -36,10 +36,12 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
-        <div className="bg-gray-900 py-8 flex flex-col items-center border-b-4 border-yellow-400">
-          <img src={logoEsdm} alt="Logo ESDM" className="w-20 h-20 object-contain mb-3" />
+        <div className="bg-gray-900 py-8 flex flex-col items-center border-b-4 border-blue-500">
+          <div className="bg-white rounded-full p-3 mb-3 shadow-md">
+            <img src={logoSicool} alt="Logo SICOOL" className="w-50 h-50 object-contain" />
+          </div>
           <h1 className="text-white text-lg font-bold text-center px-4">Pengelolaan SPIP</h1>
-          <p className="text-yellow-400 text-xs mt-1">Sistem Pemeriksaan & Pengujian Alat Berat</p>
+          <p className="text-blue-400 text-xs mt-1">Sistem Pemeriksaan & Pengujian Alat Berat</p>
         </div>
 
         <div className="p-8">
@@ -54,7 +56,7 @@ function Login() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 outline-none"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none"
                 required
               />
             </div>
@@ -65,14 +67,14 @@ function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 outline-none"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none"
                 required
               />
             </div>
 
             <button
               type="submit"
-              className="bg-gray-900 hover:bg-black text-yellow-400 px-4 py-2.5 rounded font-semibold transition"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded font-semibold transition"
             >
               Login
             </button>
