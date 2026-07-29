@@ -6,7 +6,7 @@ import {
   FilePlus,
   ClipboardList,
   History,
-  Menu,
+  MoreHorizontal,
   X,
   Moon,
   Sun,
@@ -21,7 +21,7 @@ function Sidebar() {
   const navigate = useNavigate()
   const user = ambilUser()
   const [tema, setTemaState] = useState(ambilTema())
-  const [menuTerbuka, setMenuTerbuka] = useState(false)
+  const [menuLainnyaTerbuka, setMenuLainnyaTerbuka] = useState(false)
 
   const menuItems = [
     { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -40,52 +40,17 @@ function Sidebar() {
     setTemaState(temaBaru)
   }
 
-  function tutupMenuMobile() {
-    setMenuTerbuka(false)
+  function tutupMenuLainnya() {
+    setMenuLainnyaTerbuka(false)
   }
 
   return (
     <>
-      {/* Tombol hamburger - hanya muncul di layar kecil */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-b-2 border-blue-500 px-4 py-3 flex items-center justify-between transition-colors">
-        <div className="flex items-center gap-2">
-          <div className="bg-white rounded-full p-1 flex items-center justify-center">
-            <img src={logoSicool} alt="Logo SICOOL" className="w-6 h-6 object-contain" />
-          </div>
-          <span className="text-gray-900 dark:text-white text-sm font-bold">Pengelolaan SPIP</span>
-        </div>
-        <button
-          onClick={() => setMenuTerbuka(!menuTerbuka)}
-          className="text-gray-900 dark:text-white"
-        >
-          {menuTerbuka ? <X size={26} /> : <Menu size={26} />}
-        </button>
-      </div>
-
-      {/* Overlay gelap saat menu mobile terbuka */}
-      <AnimatePresence>
-        {menuTerbuka && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={tutupMenuMobile}
-            className="md:hidden fixed inset-0 bg-black/50 z-30"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <div className={`
-        w-56 bg-white dark:bg-gray-900 min-h-screen p-4 flex-shrink-0 flex flex-col border-r-2 border-blue-500
-        fixed md:sticky top-0 left-0 h-screen z-40
-        transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] transition-colors
-        ${menuTerbuka ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
-      `}>
+      {/* ===== DESKTOP SIDEBAR (md ke atas) ===== */}
+      <div className="hidden md:flex w-56 bg-white dark:bg-gray-900 min-h-screen p-4 flex-shrink-0 flex-col border-r-2 border-blue-500 sticky top-0 h-screen transition-colors">
         <div className="flex flex-col items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
           <div className="bg-white rounded-full p-2 mb-2 shadow-sm">
-            <img src={logoSicool} alt="Logo SICOOL" className="w-50 h-50 object-contain" />
+            <img src={logoSicool} alt="Logo SICOOL" className="w-10 h-10 object-contain" />
           </div>
           <h1 className="text-gray-900 dark:text-white text-sm font-bold text-center">Pengelolaan SPIP</h1>
         </div>
@@ -98,7 +63,6 @@ function Sidebar() {
                 key={item.path}
                 to={item.path}
                 end={item.path === "/"}
-                onClick={tutupMenuMobile}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
                     isActive
@@ -134,6 +98,105 @@ function Sidebar() {
           </button>
         </div>
       </div>
+
+      {/* ===== MOBILE TOP BAR (di bawah md) ===== */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-b-2 border-blue-500 px-4 py-3 flex items-center gap-2 transition-colors">
+        <div className="bg-white rounded-full p-1 flex items-center justify-center shadow-sm">
+          <img src={logoSicool} alt="Logo SICOOL" className="w-6 h-6 object-contain" />
+        </div>
+        <span className="text-gray-900 dark:text-white text-sm font-bold">Pengelolaan SPIP</span>
+      </div>
+
+      {/* ===== MOBILE BOTTOM NAVIGATION BAR ===== */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+        <div className="flex items-center justify-around">
+          {menuItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === "/"}
+                className={({ isActive }) =>
+                  `flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-medium transition min-w-[60px] ${
+                    isActive
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-500 dark:text-gray-400"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span className={`p-1.5 rounded-full transition ${isActive ? "bg-blue-50 dark:bg-blue-950" : ""}`}>
+                      <Icon size={20} />
+                    </span>
+                    {item.label}
+                  </>
+                )}
+              </NavLink>
+            )
+          })}
+
+          <button
+            onClick={() => setMenuLainnyaTerbuka(true)}
+            className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-medium text-gray-500 dark:text-gray-400 min-w-[60px]"
+          >
+            <span className="p-1.5 rounded-full">
+              <MoreHorizontal size={20} />
+            </span>
+            Lainnya
+          </button>
+        </div>
+      </div>
+
+      {/* ===== BOTTOM SHEET: Menu Lainnya (Mode Gelap, User, Logout) ===== */}
+      <AnimatePresence>
+        {menuLainnyaTerbuka && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={tutupMenuLainnya}
+              className="md:hidden fixed inset-0 bg-black/50 z-40"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+              className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 rounded-t-2xl p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-bold text-gray-800 dark:text-white">Menu Lainnya</h2>
+                <button onClick={tutupMenuLainnya} className="text-gray-500 dark:text-gray-400">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <button
+                onClick={handleToggleTema}
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 mb-1 flex items-center gap-2"
+              >
+                {tema === "light" ? <Moon size={16} /> : <Sun size={16} />}
+                {tema === "light" ? "Mode Gelap" : "Mode Terang"}
+              </button>
+
+              <p className="text-gray-600 dark:text-gray-300 text-sm px-3 py-2.5 flex items-center gap-2">
+                <User size={16} /> {user?.nama}
+              </p>
+
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 dark:text-red-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+              >
+                <LogOut size={16} /> Logout
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   )
 }
