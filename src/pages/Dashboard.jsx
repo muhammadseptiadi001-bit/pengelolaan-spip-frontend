@@ -56,7 +56,7 @@ function TooltipModern({ active, payload, label }) {
   return (
     <div className="bg-gray-900/95 dark:bg-black/90 backdrop-blur-sm text-white rounded-xl shadow-2xl px-4 py-2.5 border border-white/10">
       <p className="text-xs text-gray-300 mb-0.5">{label}</p>
-      <p className="text-sm font-bold" style={{ color: payload[0].payload.fill || "#eab308" }}>
+      <p className="text-sm font-bold" style={{ color: payload[0].payload.fill || "#3b82f6" }}>
         {payload[0].value} unit
       </p>
     </div>
@@ -214,7 +214,7 @@ function Dashboard() {
             whileTap={{ scale: 0.97 }}
             onClick={tesKirimNotifikasi}
             disabled={sedangKirim}
-            className="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 disabled:opacity-50 text-gray-900 px-4 py-2 rounded-lg font-semibold h-fit flex items-center gap-2 shadow-md shadow-yellow-400/20"
+            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-semibold h-fit flex items-center gap-2 shadow-md shadow-blue-500/20"
           >
             <Send size={16} />
             {sedangKirim ? "Mengirim..." : "Tes Kirim Notifikasi Email"}
@@ -370,16 +370,16 @@ function Dashboard() {
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={dataPerJenisSpip} barCategoryGap="30%">
                 <defs>
-                  <linearGradient id="gradKuning" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#eab308" stopOpacity={1} />
-                    <stop offset="100%" stopColor="#eab308" stopOpacity={0.6} />
+                  <linearGradient id="gradBiru" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.6} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.15} vertical={false} />
                 <XAxis dataKey="nama" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
                 <Tooltip content={<TooltipModern />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
-                <Bar dataKey="jumlah" fill="url(#gradKuning)" radius={[8, 8, 0, 0]} maxBarSize={60}>
+                <Bar dataKey="jumlah" fill="url(#gradBiru)" radius={[8, 8, 0, 0]} maxBarSize={60}>
                   <LabelList dataKey="jumlah" position="top" style={{ fontSize: 13, fontWeight: 700 }} className="fill-gray-700 dark:fill-gray-200" />
                 </Bar>
               </BarChart>
