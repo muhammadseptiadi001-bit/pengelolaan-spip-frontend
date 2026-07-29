@@ -50,7 +50,7 @@ function Sidebar() {
       <div className="hidden md:flex w-56 bg-white dark:bg-gray-900 min-h-screen p-4 flex-shrink-0 flex-col border-r-2 border-blue-500 sticky top-0 h-screen transition-colors">
         <div className="flex flex-col items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
           <div className="bg-white rounded-full p-2 mb-2 shadow-sm">
-            <img src={logoSicool} alt="Logo SICOOL" className="w-10 h-10 object-contain" />
+            <img src={logoSicool} alt="Logo SICOOL" className="w-40 h-40 object-contain" />
           </div>
           <h1 className="text-gray-900 dark:text-white text-sm font-bold text-center">Pengelolaan SPIP</h1>
         </div>
