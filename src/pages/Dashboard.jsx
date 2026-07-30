@@ -90,7 +90,21 @@ function Dashboard() {
     try {
       const response = await apiFetch(API_URL)
       const data = await response.json()
-      setDaftarUnit(data)
+
+      let daftar = []
+      if (Array.isArray(data)) {
+        daftar = data
+      } else if (Array.isArray(data?.data)) {
+        daftar = data.data
+      } else if (Array.isArray(data?.items)) {
+        daftar = data.items
+      } else if (Array.isArray(data?.result)) {
+        daftar = data.result
+      } else {
+        console.warn('Bentuk response tidak dikenali:', data)
+      }
+
+      setDaftarUnit(daftar)
     } catch (err) {
       console.error(err)
     } finally {
