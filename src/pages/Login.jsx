@@ -3,6 +3,14 @@ import { useNavigate, Link } from 'react-router-dom'
 import { simpanLogin } from '../utils/auth'
 import logoSicool from '../assets/logo-sicool.png'
 
+const TUGAS_KO = [
+  "Sistem dan pelaksanaan pemeliharaan/perawatan sarana, prasarana, instalasi, dan peralatan pertambangan",
+  "Pengamanan instalasi",
+  "Kelayakan sarana, prasarana, instalasi, dan peralatan pertambangan",
+  "Kompetensi tenaga teknik",
+  "Evaluasi laporan hasil kajian teknis pertambangan",
+]
+
 function Login() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -46,7 +54,7 @@ function Login() {
       `}</style>
 
       {/* PANEL KIRI - Brand / Hero */}
-      <div className="relative md:w-1/2 min-h-[280px] md:min-h-screen bg-[#0B1E33] overflow-hidden flex flex-col justify-between px-8 md:px-14 py-10 md:py-14">
+      <div className="relative md:w-1/2 min-h-[420px] md:min-h-screen md:max-h-screen bg-[#0B1E33] overflow-hidden md:overflow-y-auto flex flex-col items-center px-8 md:px-14 py-10 md:py-12">
         {/* Motif garis kontur (medan tambang) */}
         <svg
           className="absolute inset-0 w-full h-full opacity-[0.18] pointer-events-none"
@@ -61,36 +69,44 @@ function Login() {
           <path d="M-50 760 C 180 700, 340 820, 540 750 S 870 700, 900 780" stroke="#3B6E91" strokeWidth="2" />
         </svg>
 
-        {/* Logo */}
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="bg-white rounded-full p-2 shadow-md">
-            <img src={logoSicool} alt="Logo SICOOL" className="w-9 h-9 object-contain" />
+        {/* Logo besar, di tengah */}
+        <div className="relative z-10 flex flex-col items-center text-center mt-2 md:mt-4">
+          <div className="bg-white rounded-full p-4 md:p-5 shadow-xl">
+            <img
+              src={logoSicool}
+              alt="Logo SICOOL"
+              className="w-28 h-28 md:w-36 md:h-36 object-contain"
+            />
           </div>
-          <div>
-            <p className="font-display text-white text-sm font-bold tracking-wide leading-none">SICOOL</p>
-            <p className="font-body text-[#7FA6C4] text-[10px] tracking-wide leading-none mt-1">
-              SAFETY IS CULTURE OF OUR LIFE
-            </p>
-          </div>
+          <h1 className="font-display text-white text-2xl md:text-3xl font-extrabold mt-5">
+            Pengelolaan SPIP
+          </h1>
+          <p className="font-body text-[#7FA6C4] text-xs md:text-sm mt-1.5 max-w-xs">
+            Sistem Pemeriksaan &amp; Pengujian Alat Berat
+          </p>
+          <div className="w-32 h-[3px] rounded-full mt-5 bg-gradient-to-r from-[#3B82C4] via-[#5FA8D3] to-[#F2A93B]" />
         </div>
 
-        {/* Judul */}
-        <div className="relative z-10 mt-10 md:mt-0">
-          <h1 className="font-display text-white text-3xl md:text-4xl font-extrabold leading-tight">
-            Pengelolaan
-            <br />
-            SPIP.
-          </h1>
-          <p className="font-body text-[#9FB7CC] text-sm md:text-[15px] mt-4 max-w-sm leading-relaxed">
-            Masuk untuk melanjutkan pemeriksaan dan pengujian kelayakan sarana, prasarana, instalasi, dan peralatan pertambangan.
+        {/* Tugas & Tanggung Jawab KO — desktop only */}
+        <div className="relative z-10 hidden md:block w-full max-w-sm mt-10">
+          <p className="font-display text-white text-sm font-bold tracking-wide mb-3">
+            Tugas &amp; Tanggung Jawab KO
           </p>
-          <div className="w-40 h-[3px] rounded-full mt-6 bg-gradient-to-r from-[#3B82C4] via-[#5FA8D3] to-[#F2A93B]" />
+          <ol className="space-y-2.5">
+            {TUGAS_KO.map((item, i) => (
+              <li key={i} className="flex items-start gap-3 font-body text-[#9FB7CC] text-[13px] leading-snug">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-white/10 text-[#F2A93B] text-[11px] font-semibold flex items-center justify-center mt-0.5">
+                  {i + 1}
+                </span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ol>
         </div>
 
         {/* Footer kecil */}
-        <div className="relative z-10 hidden md:flex items-center gap-2 text-[#5D7C93] font-body text-xs">
-          <span className="font-semibold text-[#8FB0C7]">SPIP</span>
-          <span>Sistem Pemeriksaan &amp; Pengujian Alat Berat</span>
+        <div className="relative z-10 mt-auto pt-8 text-[#5D7C93] font-body text-xs text-center">
+          © {new Date().getFullYear()} SICOOL — Safety is Culture of Our Life
         </div>
       </div>
 
