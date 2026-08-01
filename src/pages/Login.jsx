@@ -7,11 +7,13 @@ function Login() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   async function handleLogin(e) {
     e.preventDefault()
     setError("")
+    setLoading(true)
 
     try {
       const res = await fetch("https://pengelolaan-spip-backend-production.up.railway.app/api/login", {
@@ -23,6 +25,7 @@ function Login() {
 
       if (!res.ok) {
         setError(data.error || "Login gagal")
+        setLoading(false)
         return
       }
 
@@ -30,58 +33,136 @@ function Login() {
       navigate("/")
     } catch (err) {
       setError("Tidak bisa terhubung ke server. Pastikan backend berjalan.")
+      setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
-        <div className="bg-gray-900 py-8 flex flex-col items-center border-b-4 border-blue-500">
-          <div className="bg-white rounded-full p-3 mb-3 shadow-md">
-            <img src={logoSicool} alt="Logo SICOOL" className="w-50 h-50 object-contain" />
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-white">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
+        .font-display { font-family: 'Sora', sans-serif; }
+        .font-body { font-family: 'Inter', sans-serif; }
+      `}</style>
+
+      {/* PANEL KIRI - Brand / Hero */}
+      <div className="relative md:w-1/2 min-h-[280px] md:min-h-screen bg-[#0B1E33] overflow-hidden flex flex-col justify-between px-8 md:px-14 py-10 md:py-14">
+        {/* Motif garis kontur (medan tambang) */}
+        <svg
+          className="absolute inset-0 w-full h-full opacity-[0.18] pointer-events-none"
+          viewBox="0 0 800 900"
+          preserveAspectRatio="none"
+          fill="none"
+        >
+          <path d="M-50 120 C 150 60, 300 180, 500 100 S 850 40, 900 130" stroke="#3B6E91" strokeWidth="2" />
+          <path d="M-50 260 C 180 200, 320 320, 520 240 S 860 180, 900 270" stroke="#3B6E91" strokeWidth="2" />
+          <path d="M-50 420 C 160 360, 340 470, 540 400 S 870 350, 900 430" stroke="#F2A93B" strokeWidth="2" />
+          <path d="M-50 600 C 200 540, 330 650, 540 580 S 860 530, 900 610" stroke="#3B6E91" strokeWidth="2" />
+          <path d="M-50 760 C 180 700, 340 820, 540 750 S 870 700, 900 780" stroke="#3B6E91" strokeWidth="2" />
+        </svg>
+
+        {/* Logo */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="bg-white rounded-full p-2 shadow-md">
+            <img src={logoSicool} alt="Logo SICOOL" className="w-9 h-9 object-contain" />
           </div>
-          <h1 className="text-white text-lg font-bold text-center px-4">Pengelolaan SPIP</h1>
-          <p className="text-blue-400 text-xs mt-1">Sistem Pemeriksaan & Pengujian Alat Berat</p>
+          <div>
+            <p className="font-display text-white text-sm font-bold tracking-wide leading-none">SICOOL</p>
+            <p className="font-body text-[#7FA6C4] text-[10px] tracking-wide leading-none mt-1">
+              SAFETY IS CULTURE OF OUR LIFE
+            </p>
+          </div>
         </div>
 
-        <div className="p-8">
-          {error && (
-            <div className="bg-red-100 text-red-700 px-3 py-2 rounded mb-4 text-sm">{error}</div>
-          )}
+        {/* Judul */}
+        <div className="relative z-10 mt-10 md:mt-0">
+          <h1 className="font-display text-white text-3xl md:text-4xl font-extrabold leading-tight">
+            Pengelolaan
+            <br />
+            SPIP.
+          </h1>
+          <p className="font-body text-[#9FB7CC] text-sm md:text-[15px] mt-4 max-w-sm leading-relaxed">
+            Masuk untuk melanjutkan pemeriksaan dan pengujian kelayakan sarana, prasarana, instalasi, dan peralatan pertambangan.
+          </p>
+          <div className="w-40 h-[3px] rounded-full mt-6 bg-gradient-to-r from-[#3B82C4] via-[#5FA8D3] to-[#F2A93B]" />
+        </div>
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none"
-                required
-              />
+        {/* Footer kecil */}
+        <div className="relative z-10 hidden md:flex items-center gap-2 text-[#5D7C93] font-body text-xs">
+          <span className="font-semibold text-[#8FB0C7]">SPIP</span>
+          <span>Sistem Pemeriksaan &amp; Pengujian Alat Berat</span>
+        </div>
+      </div>
+
+      {/* PANEL KANAN - Form Login */}
+      <div className="md:w-1/2 flex-1 flex items-center justify-center bg-[#F5F7FA] px-6 py-12">
+        <div className="w-full max-w-sm">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+            <div className="w-10 h-10 rounded-lg bg-[#0B1E33] flex items-center justify-center mb-5">
+              <svg className="w-5 h-5 text-[#F2A93B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 10-8 0v4h8z" />
+              </svg>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none"
-                required
-              />
-            </div>
+            <h2 className="font-display text-xl font-bold text-gray-900">Masuk ke Akun</h2>
+            <p className="font-body text-sm text-gray-500 mt-1">
+              Gunakan username dan password akun SPIP Anda.
+            </p>
 
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded font-semibold transition"
-            >
-              Login
-            </button>
-          </form>
+            {error && (
+              <div className="mt-4 bg-red-50 border border-red-100 text-red-600 px-3 py-2.5 rounded-lg text-sm font-body">
+                {error}
+              </div>
+            )}
 
-          <p className="text-sm text-gray-500 mt-4 text-center">
-            Belum punya akun? <Link to="/register" className="text-gray-900 font-semibold underline">Daftar di sini</Link>
+            <form onSubmit={handleLogin} className="flex flex-col gap-4 mt-6">
+              <div>
+                <label className="block text-xs font-semibold font-body text-gray-600 mb-1.5 tracking-wide">
+                  USERNAME
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3.5 py-2.5 text-sm font-body text-gray-900 focus:ring-2 focus:ring-[#3B82C4]/40 focus:border-[#3B82C4] outline-none transition"
+                  placeholder="Masukkan username"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold font-body text-gray-600 mb-1.5 tracking-wide">
+                  PASSWORD
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3.5 py-2.5 text-sm font-body text-gray-900 focus:ring-2 focus:ring-[#3B82C4]/40 focus:border-[#3B82C4] outline-none transition"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-2 bg-[#0B1E33] hover:bg-[#12283F] disabled:opacity-60 text-white px-4 py-2.5 rounded-lg font-semibold font-body text-sm transition flex items-center justify-center gap-2"
+              >
+                {loading ? "Memproses..." : "Login"}
+              </button>
+            </form>
+
+            <p className="font-body text-sm text-gray-500 mt-5 text-center">
+              Belum punya akun?{" "}
+              <Link to="/register" className="text-[#0B1E33] font-semibold underline underline-offset-2">
+                Daftar di sini
+              </Link>
+            </p>
+          </div>
+
+          <p className="font-body text-xs text-gray-400 text-center mt-6">
+            © {new Date().getFullYear()} SICOOL — Pengelolaan SPIP
           </p>
         </div>
       </div>
