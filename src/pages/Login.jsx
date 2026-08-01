@@ -22,6 +22,7 @@ function Login() {
     e.preventDefault()
     setError("")
     setLoading(true)
+    console.log("[DEBUG] 1. Mulai login, mengirim request...")
 
     try {
       const res = await fetch("https://pengelolaan-spip-backend-production.up.railway.app/api/login", {
@@ -29,17 +30,27 @@ function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       })
+      console.log("[DEBUG] 2. Response diterima, status:", res.status)
+
       const data = await res.json()
+      console.log("[DEBUG] 3. Data JSON berhasil di-parse:", data)
 
       if (!res.ok) {
+        console.log("[DEBUG] 4a. res.ok FALSE, keluar dengan error:", data.error)
         setError(data.error || "Login gagal")
         setLoading(false)
         return
       }
 
+      console.log("[DEBUG] 4b. res.ok TRUE, lanjut simpanLogin...")
       simpanLogin(data.token, data.user)
+      console.log("[DEBUG] 5. simpanLogin selesai. Token tersimpan?", localStorage.getItem("spipToken") ? "YA" : "TIDAK")
+
+      console.log("[DEBUG] 6. Memanggil navigate('/') sekarang...")
       navigate("/")
+      console.log("[DEBUG] 7. navigate('/') sudah dipanggil (baris ini tetap jalan meski navigasi async)")
     } catch (err) {
+      console.log("[DEBUG] X. MASUK CATCH BLOCK, error:", err)
       setError("Tidak bisa terhubung ke server. Pastikan backend berjalan.")
       setLoading(false)
     }
@@ -55,7 +66,6 @@ function Login() {
 
       {/* PANEL KIRI - Brand / Hero */}
       <div className="relative md:w-1/2 min-h-[420px] md:min-h-screen md:max-h-screen bg-[#0B1E33] overflow-hidden md:overflow-y-auto flex flex-col items-center px-8 md:px-14 py-10 md:py-12">
-        {/* Motif garis kontur (medan tambang) */}
         <svg
           className="absolute inset-0 w-full h-full opacity-[0.18] pointer-events-none"
           viewBox="0 0 800 900"
@@ -69,7 +79,6 @@ function Login() {
           <path d="M-50 760 C 180 700, 340 820, 540 750 S 870 700, 900 780" stroke="#3B6E91" strokeWidth="2" />
         </svg>
 
-        {/* Logo besar, di tengah */}
         <div className="relative z-10 flex flex-col items-center text-center mt-2 md:mt-4">
           <div className="bg-white rounded-full p-4 md:p-5 shadow-xl">
             <img
@@ -87,7 +96,6 @@ function Login() {
           <div className="w-32 h-[3px] rounded-full mt-5 bg-gradient-to-r from-[#3B82C4] via-[#5FA8D3] to-[#F2A93B]" />
         </div>
 
-        {/* Tugas & Tanggung Jawab KO — desktop only */}
         <div className="relative z-10 hidden md:block w-full max-w-sm mt-10">
           <p className="font-display text-white text-sm font-bold tracking-wide mb-3">
             Tugas &amp; Tanggung Jawab KO
@@ -104,7 +112,6 @@ function Login() {
           </ol>
         </div>
 
-        {/* Footer kecil */}
         <div className="relative z-10 mt-auto pt-8 text-[#5D7C93] font-body text-xs text-center">
           © {new Date().getFullYear()} SICOOL — Safety is Culture of Our Life
         </div>
