@@ -22,7 +22,6 @@ function Login() {
     e.preventDefault()
     setError("")
     setLoading(true)
-    alert("DEBUG 1: mulai login, kode terbaru sudah jalan")
 
     try {
       const res = await fetch("https://pengelolaan-spip-backend-production.up.railway.app/api/login", {
@@ -34,18 +33,14 @@ function Login() {
       const data = await res.json()
 
       if (!res.ok) {
-        alert("DEBUG 4a: res.ok FALSE, error: " + (data.error || "tidak diketahui"))
         setError(data.error || "Login gagal")
         setLoading(false)
         return
       }
 
       simpanLogin(data.token, data.user)
-      alert("DEBUG 6: sebelum navigate('/'), token tersimpan? " + (localStorage.getItem("spipToken") ? "YA" : "TIDAK"))
-
       navigate("/")
     } catch (err) {
-      alert("DEBUG X: MASUK CATCH BLOCK, error: " + err.message)
       setError("Tidak bisa terhubung ke server. Pastikan backend berjalan.")
       setLoading(false)
     }
