@@ -382,7 +382,7 @@ function Dashboard() {
               </span>
             </div>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={dataPerJenisSpip} barCategoryGap="30%">
+              <BarChart data={dataPerJenisSpip} barCategoryGap="30%" margin={{ top: 24 }}>
                 <defs>
                   <linearGradient id="gradBiru" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
