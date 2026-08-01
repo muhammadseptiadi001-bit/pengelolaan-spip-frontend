@@ -22,7 +22,7 @@ function Login() {
     e.preventDefault()
     setError("")
     setLoading(true)
-    console.log("[DEBUG] 1. Mulai login, mengirim request...")
+    alert("DEBUG 1: mulai login, kode terbaru sudah jalan")
 
     try {
       const res = await fetch("https://pengelolaan-spip-backend-production.up.railway.app/api/login", {
@@ -30,27 +30,22 @@ function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       })
-      console.log("[DEBUG] 2. Response diterima, status:", res.status)
 
       const data = await res.json()
-      console.log("[DEBUG] 3. Data JSON berhasil di-parse:", data)
 
       if (!res.ok) {
-        console.log("[DEBUG] 4a. res.ok FALSE, keluar dengan error:", data.error)
+        alert("DEBUG 4a: res.ok FALSE, error: " + (data.error || "tidak diketahui"))
         setError(data.error || "Login gagal")
         setLoading(false)
         return
       }
 
-      console.log("[DEBUG] 4b. res.ok TRUE, lanjut simpanLogin...")
       simpanLogin(data.token, data.user)
-      console.log("[DEBUG] 5. simpanLogin selesai. Token tersimpan?", localStorage.getItem("spipToken") ? "YA" : "TIDAK")
+      alert("DEBUG 6: sebelum navigate('/'), token tersimpan? " + (localStorage.getItem("spipToken") ? "YA" : "TIDAK"))
 
-      console.log("[DEBUG] 6. Memanggil navigate('/') sekarang...")
       navigate("/")
-      console.log("[DEBUG] 7. navigate('/') sudah dipanggil (baris ini tetap jalan meski navigasi async)")
     } catch (err) {
-      console.log("[DEBUG] X. MASUK CATCH BLOCK, error:", err)
+      alert("DEBUG X: MASUK CATCH BLOCK, error: " + err.message)
       setError("Tidak bisa terhubung ke server. Pastikan backend berjalan.")
       setLoading(false)
     }
