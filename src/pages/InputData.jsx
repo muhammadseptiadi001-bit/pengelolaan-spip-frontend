@@ -10,6 +10,21 @@ import { ambilUser } from '../utils/auth'
 import { tampilkanToast } from '../utils/toast'
 import { apiFetch } from '../utils/apiFetch'
 
+// Label kelompok & item disesuaikan per Kategori SPIP supaya tidak selalu terbaca "Alat"
+const LABEL_PER_KATEGORI = {
+  "Peralatan Pertambangan": { kelompok: "Kelompok Alat", item: "Jenis Alat" },
+  "Instalasi Pertambangan": { kelompok: "Kelompok Instalasi", item: "Jenis Instalasi" },
+  "Bangunan": { kelompok: "Kelompok Bangunan", item: "Jenis Bangunan" },
+}
+
+function labelKelompok(jenisSpip) {
+  return LABEL_PER_KATEGORI[jenisSpip]?.kelompok || "Kelompok"
+}
+
+function labelItem(jenisSpip) {
+  return LABEL_PER_KATEGORI[jenisSpip]?.item || "Jenis"
+}
+
 function LabelIkon({ icon: Icon, children }) {
   return (
     <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
@@ -260,7 +275,7 @@ function InputData() {
           </div>
 
           <div>
-            <LabelIkon icon={Layers}>Kelompok Alat</LabelIkon>
+            <LabelIkon icon={Layers}>{labelKelompok(jenisSpip)}</LabelIkon>
             <AnimatePresence mode="wait">
               <motion.div
                 key={jenisSpip}
@@ -283,7 +298,7 @@ function InputData() {
           </div>
 
           <div>
-            <LabelIkon icon={Wrench}>Jenis Alat</LabelIkon>
+            <LabelIkon icon={Wrench}>{labelItem(jenisSpip)}</LabelIkon>
             <AnimatePresence mode="wait">
               <motion.div
                 key={kelompokAlat}
