@@ -9,7 +9,7 @@ export const PILIHAN_JANGKA_WAKTU = [
   { label: "3 Bulan", bulan: 3 },
 ]
 
-export const PILIHAN_JENIS_SPIP = ["Peralatan Pertambangan", "Instalasi Pertambangan"]
+export const PILIHAN_JENIS_SPIP = ["Peralatan Pertambangan", "Instalasi Pertambangan", "Bangunan"]
 
 // Struktur 3 tingkat: Kategori SPIP -> Kelompok Alat -> daftar Jenis Alat
 export const KELOMPOK_ALAT = {
@@ -153,6 +153,53 @@ export const KELOMPOK_ALAT = {
       "Sistem Ventilasi Tambang Bawah Tanah",
       "Sistem Dewatering",
       "Sistem Perpipaan Slurry",
+    ],
+  },
+  "Bangunan": {
+    "Bangunan Perkantoran dan Fasilitas Umum": [
+      "Bangunan Kantor",
+      "Mess (Camp) dan Bangunan Pendukung",
+      "Bangunan Tempat Ibadah",
+      "Mushola/Masjid",
+      "Kantin",
+      "Training Center",
+      "Pos Security",
+      "Pos Jaga",
+      "Laboratorium",
+      "Bangunan Klinik",
+    ],
+    "Bangunan Operasional dan Produksi": [
+      "Bengkel (Workshop)",
+      "Maintenance Shop",
+      "Tire Shop",
+      "Ruang Kendali (Control Room)",
+      "Washing Plant",
+      "Crushing Plant Building",
+      "Weighbridge (Jembatan Timbang)",
+      "Garasi Kendaraan",
+    ],
+    "Bangunan Penyimpanan dan Distribusi": [
+      "Gudang Penyimpanan (Warehouse)",
+      "Warehouse B3",
+      "Tangki Timbun",
+      "Fuel Station",
+      "Stockpile",
+      "Jetty/Pelabuhan",
+    ],
+    "Bangunan Keselamatan dan Lingkungan": [
+      "Bangunan Genset",
+      "Bangunan Tempat Pembuangan Sampah",
+      "TPS Limbah B3",
+      "Kolam Pengendap (Settling Pond)",
+      "Kolam Pengelolaan Air Limbah",
+      "Explosive Magazine (Gudang Bahan Peledak)",
+      "Menara Penyalur Petir",
+    ],
+    "Infrastruktur dan Akses": [
+      "Jembatan",
+      "Menara Telekomunikasi",
+      "Jalan Tambang",
+      "Park Area",
     ],
   },
 }
