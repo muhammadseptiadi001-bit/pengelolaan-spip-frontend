@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  FileText, PackagePlus, Building2, Tags, Wrench, Hash,
+  FileText, PackagePlus, Building2, Tags, Layers, Wrench, Hash,
   CalendarDays, Timer, ShieldCheck, ClipboardList,
   ImagePlus, FileUp, X, Loader2
 } from 'lucide-react'
-import { API_URL, UPLOAD_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP, PILIHAN_JENIS_ALAT } from '../utils/spipHelpers'
+import { API_URL, UPLOAD_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP, daftarKelompok, daftarAlatDalamKelompok } from '../utils/spipHelpers'
 import { ambilUser } from '../utils/auth'
 import { tampilkanToast } from '../utils/toast'
 import { apiFetch } from '../utils/apiFetch'
@@ -61,8 +61,9 @@ function InputData() {
 
   const [namaPerusahaan, setNamaPerusahaan] = useState("")
   const [jenisSpip, setJenisSpip] = useState(PILIHAN_JENIS_SPIP[0])
+  const [kelompokAlat, setKelompokAlat] = useState(daftarKelompok(PILIHAN_JENIS_SPIP[0])[0])
   const [namaUnit, setNamaUnit] = useState("")
-  const [jenisAlat, setJenisAlat] = useState(PILIHAN_JENIS_ALAT[PILIHAN_JENIS_SPIP[0]][0])
+  const [jenisAlat, setJenisAlat] = useState(daftarAlatDalamKelompok(PILIHAN_JENIS_SPIP[0], daftarKelompok(PILIHAN_JENIS_SPIP[0])[0])[0])
   const [nomorUnit, setNomorUnit] = useState("")
   const [tanggalUji, setTanggalUji] = useState("")
   const [jangkaWaktuBulan, setJangkaWaktuBulan] = useState(24)
@@ -93,8 +94,16 @@ function InputData() {
 
   function handleJenisSpipChange(e) {
     const kategoriBaru = e.target.value
+    const kelompokPertama = daftarKelompok(kategoriBaru)[0]
     setJenisSpip(kategoriBaru)
-    setJenisAlat(PILIHAN_JENIS_ALAT[kategoriBaru][0])
+    setKelompokAlat(kelompokPertama)
+    setJenisAlat(daftarAlatDalamKelompok(kategoriBaru, kelompokPertama)[0])
+  }
+
+  function handleKelompokChange(e) {
+    const kelompokBaru = e.target.value
+    setKelompokAlat(kelompokBaru)
+    setJenisAlat(daftarAlatDalamKelompok(jenisSpip, kelompokBaru)[0])
   }
 
   async function handleFotoChange(e) {
@@ -179,10 +188,12 @@ function InputData() {
 
       tampilkanToast("Unit berhasil ditambahkan!", "sukses")
 
+      const kelompokPertama = daftarKelompok(PILIHAN_JENIS_SPIP[0])[0]
       setNamaPerusahaan("")
       setJenisSpip(PILIHAN_JENIS_SPIP[0])
+      setKelompokAlat(kelompokPertama)
       setNamaUnit("")
-      setJenisAlat(PILIHAN_JENIS_ALAT[PILIHAN_JENIS_SPIP[0]][0])
+      setJenisAlat(daftarAlatDalamKelompok(PILIHAN_JENIS_SPIP[0], kelompokPertama)[0])
       setNomorUnit("")
       setTanggalUji("")
       setJangkaWaktuBulan(24)
@@ -249,21 +260,33 @@ function InputData() {
           </div>
 
           <div>
-            <LabelIkon icon={Wrench}>Nama/Model Unit</LabelIkon>
-            <input
-              type="text"
-              placeholder="Contoh: PC200"
-              value={namaUnit}
-              onChange={(e) => setNamaUnit(e.target.value)}
-              className={inputClass}
-            />
+            <LabelIkon icon={Layers}>Kelompok Alat</LabelIkon>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={jenisSpip}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <select
+                  value={kelompokAlat}
+                  onChange={handleKelompokChange}
+                  className={inputClass}
+                >
+                  {daftarKelompok(jenisSpip).map((kelompok) => (
+                    <option key={kelompok} value={kelompok}>{kelompok}</option>
+                  ))}
+                </select>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           <div>
             <LabelIkon icon={Wrench}>Jenis Alat</LabelIkon>
             <AnimatePresence mode="wait">
               <motion.div
-                key={jenisSpip}
+                key={kelompokAlat}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -274,12 +297,23 @@ function InputData() {
                   onChange={(e) => setJenisAlat(e.target.value)}
                   className={inputClass}
                 >
-                  {PILIHAN_JENIS_ALAT[jenisSpip].map((alat) => (
+                  {daftarAlatDalamKelompok(jenisSpip, kelompokAlat).map((alat) => (
                     <option key={alat} value={alat}>{alat}</option>
                   ))}
                 </select>
               </motion.div>
             </AnimatePresence>
+          </div>
+
+          <div>
+            <LabelIkon icon={Wrench}>Nama/Model Unit</LabelIkon>
+            <input
+              type="text"
+              placeholder="Contoh: PC200"
+              value={namaUnit}
+              onChange={(e) => setNamaUnit(e.target.value)}
+              className={inputClass}
+            />
           </div>
 
           <div>

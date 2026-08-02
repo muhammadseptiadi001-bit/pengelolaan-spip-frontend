@@ -9,173 +9,172 @@ export const PILIHAN_JANGKA_WAKTU = [
   { label: "3 Bulan", bulan: 3 },
 ]
 
-export const PILIHAN_JENIS_SPIP = ["Peralatan Pertambangan", "Instalasi Pertambangan", "Bangunan"]
+export const PILIHAN_JENIS_SPIP = ["Peralatan Pertambangan", "Instalasi Pertambangan"]
 
-export const PILIHAN_JENIS_ALAT = {
-  "Peralatan Pertambangan": [
-    // Alat Berat Pemindah Tanah Mekanis
-    "Excavator",
-    "Hydraulic Excavator",
-    "Backhoe",
-    "Bulldozer",
-    "Wheel Loader",
-    "Motor Grader",
-    "Scraper",
-    "Compactor",
-    "Dump Truck",
-    "Articulated Dump Truck (ADT)",
-    // Alat Penunjang Pertambangan
-    "Drill Rig",
-    "Rock Breaker",
-    "Crusher Mobile",
-    "Screening Plant",
-    "Compressor",
-    "Generator Set (Portable)",
-    "Welding Machine",
-    "Lighting Tower",
-    "Water Truck",
-    "Fuel Truck",
-    "Lubrication Truck",
-    "Service Truck",
-    // Alat Pemetaan dan Pemantauan Kestabilan Lereng
-    "Total Station",
-    "GPS Geodetik",
-    "Drone/UAV",
-    "Laser Scanner",
-    "Prism Monitoring",
-    "Inclinometer",
-    "Extensometer",
-    "Radar Slope Monitoring",
-    "Piezometer",
-    // Kendaraan untuk Mobilisasi Karyawan dan Barang
-    "Light Vehicle (LV)",
-    "Double Cabin",
-    "Bus",
-    "Manhaul",
-    "Ambulance",
-    "Lowboy",
-    "Trailer",
-    "Pickup",
-    "Minibus",
-    // Pesawat Angkat dan/atau Angkut
-    "Crane",
-    "Forklift",
-    "Overhead Crane",
-    "Gantry Crane",
-    "Hoist",
-    "Mobile Crane",
-    "Truck Crane",
-    // Peralatan Perkakas Tangan
-    "Hand Tools",
-    "Power Tools",
-    "Torque Wrench",
-    "Impact Wrench",
-    "Grinder",
-    "Drill Machine",
-    "Cutting Machine",
-    "Chain Saw",
-    // Peralatan Listrik
-    "Panel Listrik",
-    "Portable Generator",
-    "Kabel Listrik",
-    "Transformator Portable",
-    "Distribution Box",
-    "Earth Tester",
-    "Multimeter",
-    "Megger",
-  ],
-  "Instalasi Pertambangan": [
-    // Instalasi Ban Berjalan
-    "Conveyor System",
-    "Belt Conveyor",
-    "Tripper Conveyor",
-    "Stacker Conveyor",
-    // Instalasi Listrik
-    "Gardu Listrik",
-    "Transformator",
-    "Panel Distribusi",
-    "Jaringan Listrik",
-    "MCC (Motor Control Center)",
-    // Instalasi Pneumatic dan/atau Hydraulic
-    "Hydraulic Power Pack",
-    "Hydraulic System",
-    "Pneumatic Line",
-    "Air Compressor System",
-    // Instalasi Bahan Bakar Cair
-    "Fuel Station",
-    "Tangki BBM",
-    "Pipa BBM",
-    "Fuel Dispensing System",
-    // Instalasi Air
-    "Water Treatment Plant",
-    "Water Supply System",
-    "Pipa Air",
-    "Pompa Air",
-    "Reservoir",
-    // Instalasi Komunikasi
-    "Repeater Radio",
-    "Base Station Radio",
-    "Fiber Optic",
-    "CCTV",
-    "Jaringan Internet",
-    "Server Komunikasi",
-    // Instalasi Proteksi Kebakaran
-    "Fire Hydrant",
-    "Fire Alarm System",
-    "Sprinkler",
-    "Foam System",
-    "Fire Pump",
-    // Instalasi Gas
-    "Gas Pipeline",
-    "Gas Storage",
-    "Gas Regulator",
-    "Gas Detection System",
-    // Tambahan umum pertambangan
-    "Instalasi Pengolahan Air Limbah (IPAL)",
-    "Instalasi Pengolahan Air Tambang",
-    "Instalasi Pengolahan dan/atau Pemurnian",
-    "Sistem Ventilasi Tambang Bawah Tanah",
-    "Sistem Dewatering",
-    "Sistem Perpipaan Slurry",
-  ],
-  "Bangunan": [
-    "Bangunan Kantor",
-    "Bengkel (Workshop)",
-    "Bangunan Genset",
-    "Gudang Penyimpanan (Warehouse)",
-    "Bangunan Tempat Pembuangan Sampah",
-    "Tangki Timbun",
-    "Bangunan Tempat Ibadah",
-    "Bangunan Klinik",
-    "Jembatan",
-    "Menara Telekomunikasi",
-    "Menara Penyalur Petir",
-    "Kolam Pengendap (Settling Pond)",
-    "Mess (Camp) dan Bangunan Pendukung",
-    "Ruang Kendali (Control Room)",
-    "Washing Plant",
-    "Fuel Station",
-    "Jalan Tambang",
-    "Stockpile",
-    "Kolam Pengelolaan Air Limbah",
-    "Laboratorium",
-    "Pos Security",
-    "Pos Jaga",
-    "Training Center",
-    "Garasi Kendaraan",
-    "Warehouse B3",
-    "TPS Limbah B3",
-    "Kantin",
-    "Mushola/Masjid",
-    "Park Area",
-    "Weighbridge (Jembatan Timbang)",
-    "Jetty/Pelabuhan",
-    "Crushing Plant Building",
-    "Maintenance Shop",
-    "Tire Shop",
-    "Explosive Magazine (Gudang Bahan Peledak)",
-  ],
+// Struktur 3 tingkat: Kategori SPIP -> Kelompok Alat -> daftar Jenis Alat
+export const KELOMPOK_ALAT = {
+  "Peralatan Pertambangan": {
+    "Alat Berat Pemindah Tanah Mekanis": [
+      "Excavator",
+      "Hydraulic Excavator",
+      "Backhoe",
+      "Bulldozer",
+      "Wheel Loader",
+      "Motor Grader",
+      "Scraper",
+      "Compactor",
+      "Dump Truck",
+      "Articulated Dump Truck (ADT)",
+    ],
+    "Alat Penunjang Pertambangan": [
+      "Drill Rig",
+      "Rock Breaker",
+      "Crusher Mobile",
+      "Screening Plant",
+      "Compressor",
+      "Generator Set (Portable)",
+      "Welding Machine",
+      "Lighting Tower",
+      "Water Truck",
+      "Fuel Truck",
+      "Lubrication Truck",
+      "Service Truck",
+    ],
+    "Alat Pemetaan dan Pemantauan Kestabilan Lereng": [
+      "Total Station",
+      "GPS Geodetik",
+      "Drone/UAV",
+      "Laser Scanner",
+      "Prism Monitoring",
+      "Inclinometer",
+      "Extensometer",
+      "Radar Slope Monitoring",
+      "Piezometer",
+    ],
+    "Kendaraan Mobilisasi Karyawan dan Barang": [
+      "Light Vehicle (LV)",
+      "Double Cabin",
+      "Bus",
+      "Manhaul",
+      "Ambulance",
+      "Lowboy",
+      "Trailer",
+      "Pickup",
+      "Minibus",
+    ],
+    "Pesawat Angkat dan/atau Angkut": [
+      "Crane",
+      "Forklift",
+      "Overhead Crane",
+      "Gantry Crane",
+      "Hoist",
+      "Mobile Crane",
+      "Truck Crane",
+    ],
+    "Peralatan Perkakas Tangan": [
+      "Hand Tools",
+      "Power Tools",
+      "Torque Wrench",
+      "Impact Wrench",
+      "Grinder",
+      "Drill Machine",
+      "Cutting Machine",
+      "Chain Saw",
+    ],
+    "Peralatan Listrik": [
+      "Panel Listrik",
+      "Portable Generator",
+      "Kabel Listrik",
+      "Transformator Portable",
+      "Distribution Box",
+      "Earth Tester",
+      "Multimeter",
+      "Megger",
+    ],
+  },
+  "Instalasi Pertambangan": {
+    "Instalasi Ban Berjalan": [
+      "Conveyor System",
+      "Belt Conveyor",
+      "Tripper Conveyor",
+      "Stacker Conveyor",
+    ],
+    "Instalasi Listrik": [
+      "Gardu Listrik",
+      "Transformator",
+      "Panel Distribusi",
+      "Jaringan Listrik",
+      "MCC (Motor Control Center)",
+    ],
+    "Instalasi Pneumatic dan/atau Hydraulic": [
+      "Hydraulic Power Pack",
+      "Hydraulic System",
+      "Pneumatic Line",
+      "Air Compressor System",
+    ],
+    "Instalasi Bahan Bakar Cair": [
+      "Fuel Station",
+      "Tangki BBM",
+      "Pipa BBM",
+      "Fuel Dispensing System",
+    ],
+    "Instalasi Air": [
+      "Water Treatment Plant",
+      "Water Supply System",
+      "Pipa Air",
+      "Pompa Air",
+      "Reservoir",
+    ],
+    "Instalasi Komunikasi": [
+      "Repeater Radio",
+      "Base Station Radio",
+      "Fiber Optic",
+      "CCTV",
+      "Jaringan Internet",
+      "Server Komunikasi",
+    ],
+    "Instalasi Proteksi Kebakaran": [
+      "Fire Hydrant",
+      "Fire Alarm System",
+      "Sprinkler",
+      "Foam System",
+      "Fire Pump",
+    ],
+    "Instalasi Gas": [
+      "Gas Pipeline",
+      "Gas Storage",
+      "Gas Regulator",
+      "Gas Detection System",
+    ],
+    "Instalasi Lainnya": [
+      "Instalasi Pengolahan Air Limbah (IPAL)",
+      "Instalasi Pengolahan Air Tambang",
+      "Instalasi Pengolahan dan/atau Pemurnian",
+      "Sistem Ventilasi Tambang Bawah Tanah",
+      "Sistem Dewatering",
+      "Sistem Perpipaan Slurry",
+    ],
+  },
 }
+
+// Daftar nama kelompok per kategori SPIP, untuk mengisi dropdown "Kelompok Alat"
+export function daftarKelompok(jenisSpip) {
+  return Object.keys(KELOMPOK_ALAT[jenisSpip] || {})
+}
+
+// Daftar jenis alat untuk satu kelompok tertentu
+export function daftarAlatDalamKelompok(jenisSpip, kelompok) {
+  return KELOMPOK_ALAT[jenisSpip]?.[kelompok] || []
+}
+
+// Versi flat (semua jenis alat digabung per kategori) - dipakai untuk filter "Semua Kelompok"
+// dan supaya file lain yang masih pakai PILIHAN_JENIS_ALAT tetap jalan
+export const PILIHAN_JENIS_ALAT = Object.fromEntries(
+  Object.entries(KELOMPOK_ALAT).map(([kategori, kelompokObj]) => [
+    kategori,
+    Object.values(kelompokObj).flat(),
+  ])
+)
 
 export const SEMUA_JENIS_ALAT = Object.values(PILIHAN_JENIS_ALAT).flat()
 
