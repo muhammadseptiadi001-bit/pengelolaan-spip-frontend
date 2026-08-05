@@ -20,12 +20,7 @@ function Riwayat() {
   const [daftarRiwayat, setDaftarRiwayat] = useState([])
   const [sedangMuat, setSedangMuat] = useState(true)
 
-  useEffect(() => {
-    ambilRiwayat()
-  }, [])
-
   async function ambilRiwayat() {
-    setSedangMuat(true)
     try {
       const res = await apiFetch(`${API_URL.replace('/api/unit', '')}/api/riwayat`)
       const data = await res.json()
@@ -36,6 +31,10 @@ function Riwayat() {
       setSedangMuat(false)
     }
   }
+
+  useEffect(() => {
+    ambilRiwayat()
+  }, [])
 
   return (
     <div>

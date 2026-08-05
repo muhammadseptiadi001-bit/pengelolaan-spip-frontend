@@ -220,6 +220,7 @@ function InputData() {
       setPdfData(null)
       ambilDaftarNomorUnit()
     } catch (err) {
+      console.error(err)
       tampilkanToast("Gagal menambahkan unit. Pastikan server backend sedang berjalan.", "gagal")
     } finally {
       setSedangSimpan(false)

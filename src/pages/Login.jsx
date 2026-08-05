@@ -41,6 +41,7 @@ function Login() {
       simpanLogin(data.token, data.user)
       navigate("/")
     } catch (err) {
+      console.error(err)
       setError("Tidak bisa terhubung ke server. Pastikan backend berjalan.")
       setLoading(false)
     }

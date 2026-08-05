@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ExcelJS from 'exceljs'
 import {
@@ -92,38 +92,7 @@ function DataSPIP() {
 
   const [filter, setFilter] = useState(FILTER_AWAL)
 
-  // Ambil data dari backend tiap filter atau halaman berubah.
-  // Request pertama langsung jalan; perubahan berikutnya di-debounce 400ms
-  // supaya tidak nembak request tiap kali user mengetik di kolom filter.
-  useEffect(() => {
-    if (belumPernahMuat.current) {
-      belumPernahMuat.current = false
-      ambilData()
-      return
-    }
-    const timer = setTimeout(() => {
-      ambilData()
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [filter, halaman])
-
-  useEffect(() => {
-    setHalaman(1)
-  }, [filter])
-
-  useEffect(() => {
-    cekScroll()
-  }, [daftarUnit])
-
-  function cekScroll() {
-    const el = scrollRef.current
-    if (!el) return
-    const bisaDigeser = el.scrollWidth > el.clientWidth + 4
-    const sudahMentok = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4
-    setBisaScrollKanan(bisaDigeser && !sudahMentok)
-  }
-
-  async function ambilData() {
+  const ambilData = useCallback(async () => {
     setSedangMuatData(true)
     try {
       const params = bangunQueryFilter(filter)
@@ -141,6 +110,33 @@ function DataSPIP() {
     } finally {
       setSedangMuatData(false)
     }
+  }, [filter, halaman])
+
+  // Ambil data dari backend tiap filter atau halaman berubah.
+  // Request pertama langsung jalan; perubahan berikutnya di-debounce 400ms
+  // supaya tidak nembak request tiap kali user mengetik di kolom filter.
+  useEffect(() => {
+    if (belumPernahMuat.current) {
+      belumPernahMuat.current = false
+      ambilData()
+      return
+    }
+    const timer = setTimeout(() => {
+      ambilData()
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [ambilData])
+
+  useEffect(() => {
+    cekScroll()
+  }, [daftarUnit])
+
+  function cekScroll() {
+    const el = scrollRef.current
+    if (!el) return
+    const bisaDigeser = el.scrollWidth > el.clientWidth + 4
+    const sudahMentok = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4
+    setBisaScrollKanan(bisaDigeser && !sudahMentok)
   }
 
   // Ambil SEMUA data yang cocok filter (tanpa pagination), khusus untuk export Excel
@@ -155,10 +151,12 @@ function DataSPIP() {
 
   function updateFilter(kolom, nilai) {
     setFilter((prev) => ({ ...prev, [kolom]: nilai }))
+    setHalaman(1)
   }
 
   function updateFilterJenisSpip(kategoriBaru) {
     setFilter((prev) => ({ ...prev, jenisSpip: kategoriBaru, jenisAlat: "Semua" }))
+    setHalaman(1)
   }
 
   const pilihanJenisAlatFilter = filter.jenisSpip === "Semua"
@@ -183,6 +181,7 @@ function DataSPIP() {
       tampilkanToast("Status kelayakan berhasil diubah.", "sukses")
       ambilData()
     } catch (err) {
+      console.error(err)
       tampilkanToast("Gagal mengubah status. Pastikan server backend sedang berjalan.", "gagal")
     }
   }
@@ -198,6 +197,7 @@ function DataSPIP() {
       tampilkanToast("Tindak lanjut berhasil disimpan.", "sukses")
       ambilData()
     } catch (err) {
+      console.error(err)
       tampilkanToast("Gagal menyimpan tindak lanjut. Pastikan server backend sedang berjalan.", "gagal")
     }
   }
@@ -214,6 +214,7 @@ function DataSPIP() {
       tampilkanToast("Unit berhasil dihapus.", "sukses")
       ambilData()
     } catch (err) {
+      console.error(err)
       tampilkanToast("Gagal menghapus data. Pastikan server backend sedang berjalan.", "gagal")
     }
   }
@@ -227,6 +228,7 @@ function DataSPIP() {
       const data = await res.json()
       setDaftarRiwayatUnit(data)
     } catch (err) {
+      console.error(err)
       tampilkanToast("Gagal mengambil riwayat unit.", "gagal")
     } finally {
       setSedangMuatRiwayat(false)

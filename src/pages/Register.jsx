@@ -31,6 +31,7 @@ function Register() {
       setSukses(true)
       setTimeout(() => navigate("/login"), 1500)
     } catch (err) {
+      console.error(err)
       setError("Tidak bisa terhubung ke server. Pastikan backend berjalan.")
     }
   }

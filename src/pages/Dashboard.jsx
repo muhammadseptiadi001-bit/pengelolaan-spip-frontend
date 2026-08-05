@@ -81,12 +81,7 @@ function Dashboard() {
   const [statusKirim, setStatusKirim] = useState("")
   const [sedangKirim, setSedangKirim] = useState(false)
 
-  useEffect(() => {
-    ambilData()
-  }, [])
-
   async function ambilData() {
-    setSedangMuat(true)
     try {
       const response = await apiFetch(API_URL)
       const data = await response.json()
@@ -111,6 +106,10 @@ function Dashboard() {
       setSedangMuat(false)
     }
   }
+
+  useEffect(() => {
+    ambilData()
+  }, [])
 
   async function tesKirimNotifikasi() {
     setSedangKirim(true)

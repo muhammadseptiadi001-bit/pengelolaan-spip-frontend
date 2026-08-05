@@ -53,7 +53,6 @@ export const KELOMPOK_ALAT = {
     ],
     "Kendaraan Mobilisasi Karyawan dan Barang": [
       "Light Vehicle (LV)",
-      "Double Cabin",
       "Bus",
       "Manhaul",
       "Ambulance",
