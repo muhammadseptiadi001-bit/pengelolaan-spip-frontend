@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import ExcelJS from 'exceljs'
 import {
@@ -23,6 +24,10 @@ const FILTER_AWAL = {
   statusWaktu: "Semua",
   statusKelayakan: "Semua",
 }
+
+// Sama dengan pilihan status kompetensi yang dipakai di InputData.jsx, supaya konsisten
+// saat unit diedit langsung dari tabel Data SPIP.
+const PILIHAN_STATUS_KOMPETENSI = ["Bersertifikat / Kompeten", "Belum Bersertifikat"]
 
 function ikonStatusWaktu(label) {
   if (label === "Aman") return <CheckCircle2 size={13} />
@@ -72,6 +77,11 @@ function bangunQueryFilter(filter) {
 }
 
 function DataSPIP() {
+  // Baca parameter URL "nomorUnit" (misal ?nomorUnit=EXC-001) supaya kalau user datang
+  // dari tombol "Tindak Lanjuti" di halaman Evaluasi, filter tabel langsung terisi
+  // dan baris unit yang bermasalah langsung kelihatan tanpa perlu dicari manual.
+  const [searchParams] = useSearchParams()
+
   const [daftarUnit, setDaftarUnit] = useState([])
   const [totalData, setTotalData] = useState(0)
   const [totalHalaman, setTotalHalaman] = useState(1)
@@ -90,7 +100,10 @@ function DataSPIP() {
   const [daftarRiwayatUnit, setDaftarRiwayatUnit] = useState([])
   const [sedangMuatRiwayat, setSedangMuatRiwayat] = useState(false)
 
-  const [filter, setFilter] = useState(FILTER_AWAL)
+  const [filter, setFilter] = useState(() => {
+    const nomorUnitDariUrl = searchParams.get("nomorUnit")
+    return nomorUnitDariUrl ? { ...FILTER_AWAL, nomorUnit: nomorUnitDariUrl } : FILTER_AWAL
+  })
 
   const ambilData = useCallback(async () => {
     setSedangMuatData(true)
@@ -163,6 +176,35 @@ function DataSPIP() {
     ? SEMUA_JENIS_ALAT
     : PILIHAN_JENIS_ALAT[filter.jenisSpip]
 
+  // Fungsi umum untuk update unit lewat PUT /api/unit/:id. Backend meng-update
+  // 4 kolom sekaligus (statusKelayakan, tindakLanjut, namaPetugas, statusKompetensi),
+  // jadi setiap pemanggilan wajib mengirim nilai TERBARU untuk keempatnya —
+  // "perubahan" hanya berisi field yang benar-benar diubah, sisanya diambil dari data unit saat ini
+  // supaya field lain tidak ikut ke-reset jadi kosong/null.
+  async function perbaruiUnit(unit, perubahan, pesanSukses, pesanGagal) {
+    const payload = {
+      statusKelayakan: unit.statusKelayakan,
+      tindakLanjut: unit.tindakLanjut || "",
+      namaPetugas: unit.namaPetugas || "",
+      statusKompetensi: unit.statusKompetensi || "Belum Bersertifikat",
+      ...perubahan,
+    }
+
+    try {
+      const res = await apiFetch(`${API_URL}/${unit.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error("Gagal update")
+      tampilkanToast(pesanSukses, "sukses")
+      ambilData()
+    } catch (err) {
+      console.error(err)
+      tampilkanToast(pesanGagal, "gagal")
+    }
+  }
+
   async function updateStatusKelayakan(unit, statusBaru) {
     if (statusBaru === unit.statusKelayakan) return
 
@@ -171,35 +213,41 @@ function DataSPIP() {
     )
     if (!konfirmasi) return
 
-    try {
-      const res = await apiFetch(`${API_URL}/${unit.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ statusKelayakan: statusBaru, tindakLanjut: unit.tindakLanjut || "" }),
-      })
-      if (!res.ok) throw new Error("Gagal update status")
-      tampilkanToast("Status kelayakan berhasil diubah.", "sukses")
-      ambilData()
-    } catch (err) {
-      console.error(err)
-      tampilkanToast("Gagal mengubah status. Pastikan server backend sedang berjalan.", "gagal")
-    }
+    perbaruiUnit(
+      unit,
+      { statusKelayakan: statusBaru },
+      "Status kelayakan berhasil diubah.",
+      "Gagal mengubah status. Pastikan server backend sedang berjalan."
+    )
   }
 
   async function updateTindakLanjut(unit, tindakLanjutBaru) {
-    try {
-      const res = await apiFetch(`${API_URL}/${unit.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ statusKelayakan: unit.statusKelayakan, tindakLanjut: tindakLanjutBaru }),
-      })
-      if (!res.ok) throw new Error("Gagal update tindak lanjut")
-      tampilkanToast("Tindak lanjut berhasil disimpan.", "sukses")
-      ambilData()
-    } catch (err) {
-      console.error(err)
-      tampilkanToast("Gagal menyimpan tindak lanjut. Pastikan server backend sedang berjalan.", "gagal")
-    }
+    perbaruiUnit(
+      unit,
+      { tindakLanjut: tindakLanjutBaru },
+      "Tindak lanjut berhasil disimpan.",
+      "Gagal menyimpan tindak lanjut. Pastikan server backend sedang berjalan."
+    )
+  }
+
+  async function updateNamaPetugas(unit, namaPetugasBaru) {
+    if (namaPetugasBaru === (unit.namaPetugas || "")) return
+    perbaruiUnit(
+      unit,
+      { namaPetugas: namaPetugasBaru },
+      "Nama petugas berhasil disimpan.",
+      "Gagal menyimpan nama petugas. Pastikan server backend sedang berjalan."
+    )
+  }
+
+  async function updateStatusKompetensi(unit, statusBaru) {
+    if (statusBaru === (unit.statusKompetensi || "Belum Bersertifikat")) return
+    perbaruiUnit(
+      unit,
+      { statusKompetensi: statusBaru },
+      "Status kompetensi berhasil diubah.",
+      "Gagal mengubah status kompetensi. Pastikan server backend sedang berjalan."
+    )
   }
 
   async function hapusUnit(unit) {
@@ -299,6 +347,8 @@ function DataSPIP() {
           <tr><td class="label">Status Kelayakan</td><td>
             <span class="badge ${unit.statusKelayakan === "Layak" ? "badge-layak" : unit.statusKelayakan === "Tidak Layak" ? "badge-tidak" : "badge-catatan"}">${unit.statusKelayakan}</span>
           </td></tr>
+          <tr><td class="label">Nama Petugas</td><td>${unit.namaPetugas || "-"}</td></tr>
+          <tr><td class="label">Status Kompetensi</td><td>${unit.statusKompetensi || "-"}</td></tr>
           <tr><td class="label">Temuan</td><td>${unit.temuan ? unit.temuan.replace(/</g, "&lt;") : "-"}</td></tr>
           <tr><td class="label">Tindak Lanjut Perbaikan</td><td>${unit.tindakLanjut ? unit.tindakLanjut.replace(/</g, "&lt;") : "-"}</td></tr>
           <tr><td class="label">Dibuat Oleh</td><td>${unit.dibuatOleh || "-"}</td></tr>
@@ -430,6 +480,8 @@ function DataSPIP() {
         { header: "Jatuh Tempo", key: "jatuhTempo", width: 18 },
         { header: "Sisa Waktu", key: "sisaWaktu", width: 22 },
         { header: "Status Kelayakan", key: "statusKelayakan", width: 18 },
+        { header: "Nama Petugas", key: "namaPetugas", width: 22 },
+        { header: "Status Kompetensi", key: "statusKompetensi", width: 20 },
         { header: "Temuan", key: "temuan", width: 32 },
         { header: "Tindak Lanjut Perbaikan", key: "tindakLanjut", width: 32 },
       ]
@@ -447,6 +499,8 @@ function DataSPIP() {
           jatuhTempo: formatTanggal(jatuhTempo),
           sisaWaktu: hitungSisaDetail(jatuhTempo),
           statusKelayakan: unit.statusKelayakan,
+          namaPetugas: unit.namaPetugas || "-",
+          statusKompetensi: unit.statusKompetensi || "-",
           temuan: unit.temuan || "-",
           tindakLanjut: unit.tindakLanjut || "-",
         })
@@ -689,6 +743,8 @@ function DataSPIP() {
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Sisa Waktu</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Waktu</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Kelayakan</th>
+                      <th className="py-2.5 px-3 min-w-[180px] text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Petugas</th>
+                      <th className="py-2.5 px-3 min-w-[190px] text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Kompetensi</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Temuan</th>
                       <th className="py-2.5 px-3 min-w-[220px] text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tindak Lanjut</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Foto</th>
@@ -755,12 +811,14 @@ function DataSPIP() {
                       <th className="py-2 px-3"></th>
                       <th className="py-2 px-3"></th>
                       <th className="py-2 px-3"></th>
+                      <th className="py-2 px-3"></th>
+                      <th className="py-2 px-3"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {daftarUnit.length === 0 ? (
                       <tr>
-                        <td colSpan="15" className="py-6 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan="17" className="py-6 text-center text-gray-500 dark:text-gray-400">
                           {sedangMuatData ? "Memuat data..." : "Tidak ada data yang cocok dengan filter."}
                         </td>
                       </tr>
@@ -804,6 +862,26 @@ function DataSPIP() {
                                   <option value="Layak Dengan Catatan">Layak Dengan Catatan</option>
                                 </select>
                               </div>
+                            </td>
+                            <td className="py-2.5 px-3 min-w-[180px]">
+                              <input
+                                type="text"
+                                defaultValue={unit.namaPetugas || ""}
+                                placeholder="Nama petugas..."
+                                onBlur={(e) => updateNamaPetugas(unit, e.target.value)}
+                                className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
+                              />
+                            </td>
+                            <td className="py-2.5 px-3 min-w-[190px]">
+                              <select
+                                value={unit.statusKompetensi || "Belum Bersertifikat"}
+                                onChange={(e) => updateStatusKompetensi(unit, e.target.value)}
+                                className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold border-0 ${unit.statusKompetensi === "Bersertifikat / Kompeten" ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}
+                              >
+                                {PILIHAN_STATUS_KOMPETENSI.map((status) => (
+                                  <option key={status} value={status}>{status}</option>
+                                ))}
+                              </select>
                             </td>
                             <td className="py-2.5 px-3 max-w-xs">{unit.temuan ? unit.temuan : <span className="text-gray-400 dark:text-gray-500">-</span>}</td>
                             <td className="py-2.5 px-3 min-w-[220px]">
