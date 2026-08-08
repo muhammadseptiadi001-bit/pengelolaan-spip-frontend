@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Cell, LabelList } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LabelList } from 'recharts'
 import {
   ShieldCheck, AlertTriangle, XCircle, TrendingUp, ClipboardList,
-  CheckCircle2, Circle, Info, Loader2, ChevronDown, Boxes
+  CheckCircle2, Circle, Info, Loader2, ChevronDown
 } from 'lucide-react'
 import { API_URL, hitungJatuhTempo, hitungStatusWaktu, formatTanggal, cariKelompokUntukAlat } from '../utils/spipHelpers'
 import { apiFetch } from '../utils/apiFetch'
@@ -88,8 +88,8 @@ function TooltipModernBertumpuk({ active, payload, label }) {
     <div className="bg-gray-900/95 dark:bg-black/90 backdrop-blur-sm text-white rounded-xl shadow-2xl px-4 py-2.5 border border-white/10">
       <p className="text-xs text-gray-300 mb-1">{label}</p>
       {payload.filter((p) => p.value > 0).map((p) => (
-        <p key={p.dataKey} className="text-sm font-bold flex items-center gap-1.5" style={{ color: p.color }}>
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }}></span>
+        <p key={p.dataKey} className="text-sm font-bold flex items-center gap-1.5" style={{ color: WARNA_KELAYAKAN[p.dataKey] }}>
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: WARNA_KELAYAKAN[p.dataKey] }}></span>
           {p.dataKey}: {p.value} unit
         </p>
       ))}
@@ -107,17 +107,17 @@ const varianKartu = {
   tampil: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
 }
 
-// ===== KOMPONEN CHECKLIST DENGAN DETAIL UNIT BERMASALAH =====
+// ===== KOMPONEN CHECKLIST DENGAN DETAIL UNIT BERMASALAH (default terbuka kalau ada masalah) =====
 
 function ItemChecklistOtomatis({ item, terbuka, onToggle }) {
   const punyaDetail = item.unitBermasalah && item.unitBermasalah.length > 0
 
   return (
-    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 overflow-hidden">
+    <div className={`rounded-xl overflow-hidden ${item.terpenuhi ? "bg-gray-50 dark:bg-gray-800/60" : "bg-red-50/60 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40"}`}>
       <button
         type="button"
         onClick={punyaDetail ? onToggle : undefined}
-        className={`w-full flex items-start gap-3 p-3 text-left ${punyaDetail ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/90 transition-colors" : "cursor-default"}`}
+        className={`w-full flex items-start gap-3 p-3 text-left ${punyaDetail ? "cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors" : "cursor-default"}`}
       >
         {item.terpenuhi ? (
           <CheckCircle2 size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
@@ -136,7 +136,7 @@ function ItemChecklistOtomatis({ item, terbuka, onToggle }) {
         )}
       </button>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {terbuka && punyaDetail && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
@@ -146,8 +146,8 @@ function ItemChecklistOtomatis({ item, terbuka, onToggle }) {
             className="overflow-hidden"
           >
             <div className="border-t border-gray-200 dark:border-gray-700 px-3 py-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2 mt-1">
-                Unit yang belum memenuhi ({item.unitBermasalah.length})
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-500 dark:text-red-400 mb-2 mt-1">
+                Perlu ditindaklanjuti — {item.unitBermasalah.length} unit
               </p>
               <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
                 <table className="w-full text-left border-collapse">
@@ -155,7 +155,7 @@ function ItemChecklistOtomatis({ item, terbuka, onToggle }) {
                     <tr className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                       <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Unit</th>
                       <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nomor Unit</th>
-                      <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Alasan</th>
+                      <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Alasan Belum Memenuhi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -206,7 +206,7 @@ function Evaluasi() {
   const [daftarUnit, setDaftarUnit] = useState([])
   const [sedangMuat, setSedangMuat] = useState(true)
   const [bulanTerpilih, setBulanTerpilih] = useState("Semua")
-  const [itemTerbuka, setItemTerbuka] = useState(null)
+  const [itemDitutupManual, setItemDitutupManual] = useState(() => new Set())
 
   const [pengaturanPerusahaan, setPengaturanPerusahaan] = useState({
     prosedurPengujianKelayakan: false,
@@ -272,7 +272,12 @@ function Evaluasi() {
   }
 
   function toggleItemTerbuka(index) {
-    setItemTerbuka((sebelumnya) => (sebelumnya === index ? null : index))
+    setItemDitutupManual((sebelumnya) => {
+      const baru = new Set(sebelumnya)
+      if (baru.has(index)) baru.delete(index)
+      else baru.add(index)
+      return baru
+    })
   }
 
   const daftarBulanTersedia = useMemo(() => {
@@ -285,18 +290,25 @@ function Evaluasi() {
     return daftarUnit.filter((u) => kunciBulan(u.tanggalUjiTerakhir) === bulanTerpilih)
   }, [daftarUnit, bulanTerpilih])
 
+  // Tingkat Kepatuhan sekarang mencakup 3 kriteria sekaligus: jadwal (tidak lewat tempo),
+  // kompetensi petugas, dan tindak lanjut temuan — bukan cuma status jatuh tempo saja.
   const kepatuhan = useMemo(() => {
-    let aman = 0, mendekati = 0, lewat = 0
+    let aman = 0, mendekati = 0, lewat = 0, compliant = 0
     dataUnitTerfilter.forEach((u) => {
       const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
       const label = hitungStatusWaktu(jatuhTempo).label
       if (label === "Aman") aman++
       else if (label === "Mendekati Jatuh Tempo") mendekati++
       else lewat++
+
+      const jadwalOk = label !== "Sudah Lewat"
+      const petugasOk = u.statusKompetensi === "Bersertifikat / Kompeten"
+      const tindakLanjutOk = !((u.statusKelayakan === "Tidak Layak" || u.statusKelayakan === "Layak Dengan Catatan") && !u.tindakLanjut)
+      if (jadwalOk && petugasOk && tindakLanjutOk) compliant++
     })
     const total = dataUnitTerfilter.length
-    const persentase = total === 0 ? 0 : Math.round(((total - lewat) / total) * 100)
-    return { aman, mendekati, lewat, total, persentase }
+    const persentase = total === 0 ? 0 : Math.round((compliant / total) * 100)
+    return { aman, mendekati, lewat, total, compliant, persentase }
   }, [dataUnitTerfilter])
 
   const trenStatusKelayakan = useMemo(() => {
@@ -402,7 +414,7 @@ function Evaluasi() {
   }, [daftarUnit])
 
   const kartuRingkasan = [
-    { label: "Tingkat Kepatuhan", nilai: kepatuhan.persentase, satuan: "%", sub: `dari ${kepatuhan.total} unit ${bulanTerpilih === "Semua" ? "" : "pada bulan ini"}`, icon: ShieldCheck, warna: "text-blue-600 dark:text-blue-400", aksen: "from-blue-400 to-blue-600", bgIkon: "bg-gradient-to-br from-blue-400 to-blue-600" },
+    { label: "Tingkat Kepatuhan", nilai: kepatuhan.persentase, satuan: "%", sub: `${kepatuhan.compliant} dari ${kepatuhan.total} unit memenuhi jadwal, kompetensi petugas & tindak lanjut`, icon: ShieldCheck, warna: "text-blue-600 dark:text-blue-400", aksen: "from-blue-400 to-blue-600", bgIkon: "bg-gradient-to-br from-blue-400 to-blue-600" },
     { label: "Aman", nilai: kepatuhan.aman, satuan: "", sub: null, icon: CheckCircle2, warna: "text-green-600 dark:text-green-400", aksen: "from-green-400 to-emerald-600", bgIkon: "bg-gradient-to-br from-green-400 to-emerald-600" },
     { label: "Mendekati Jatuh Tempo", nilai: kepatuhan.mendekati, satuan: "", sub: null, icon: AlertTriangle, warna: "text-yellow-600 dark:text-yellow-400", aksen: "from-yellow-400 to-amber-600", bgIkon: "bg-gradient-to-br from-yellow-400 to-amber-600" },
     { label: "Sudah Lewat", nilai: kepatuhan.lewat, satuan: "", sub: null, icon: XCircle, warna: "text-red-600 dark:text-red-400", aksen: "from-red-400 to-rose-600", bgIkon: "bg-gradient-to-br from-red-400 to-rose-600" },
@@ -500,14 +512,28 @@ function Evaluasi() {
             ) : (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={trenStatusKelayakan} barCategoryGap="25%">
+                  <defs>
+                    <linearGradient id="gradLayak" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={WARNA_KELAYAKAN["Layak"]} stopOpacity={1} />
+                      <stop offset="100%" stopColor={WARNA_KELAYAKAN["Layak"]} stopOpacity={0.6} />
+                    </linearGradient>
+                    <linearGradient id="gradTidakLayak" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={WARNA_KELAYAKAN["Tidak Layak"]} stopOpacity={1} />
+                      <stop offset="100%" stopColor={WARNA_KELAYAKAN["Tidak Layak"]} stopOpacity={0.6} />
+                    </linearGradient>
+                    <linearGradient id="gradLayakCatatan" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={WARNA_KELAYAKAN["Layak Dengan Catatan"]} stopOpacity={1} />
+                      <stop offset="100%" stopColor={WARNA_KELAYAKAN["Layak Dengan Catatan"]} stopOpacity={0.6} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.15} vertical={false} />
                   <XAxis dataKey="bulan" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
                   <Tooltip content={<TooltipModernBertumpuk />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="Layak" stackId="a" fill={WARNA_KELAYAKAN["Layak"]} radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="Tidak Layak" stackId="a" fill={WARNA_KELAYAKAN["Tidak Layak"]} />
-                  <Bar dataKey="Layak Dengan Catatan" stackId="a" fill={WARNA_KELAYAKAN["Layak Dengan Catatan"]} radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Layak" stackId="a" fill="url(#gradLayak)" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="Tidak Layak" stackId="a" fill="url(#gradTidakLayak)" />
+                  <Bar dataKey="Layak Dengan Catatan" stackId="a" fill="url(#gradLayakCatatan)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -611,7 +637,7 @@ function Evaluasi() {
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Checklist Kepatuhan Regulasi</h2>
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-              Berdasarkan kriteria penilaian Kepmen ESDM soal kelayakan sarana/prasarana/instalasi/peralatan dan pengelolaan Keselamatan Operasi Pertambangan. Klik item yang bertanda ✗ untuk melihat unit mana saja yang belum memenuhi.
+              Berdasarkan kriteria penilaian Kepmen ESDM soal kelayakan sarana/prasarana/instalasi/peralatan dan pengelolaan Keselamatan Operasi Pertambangan. Item yang belum terpenuhi otomatis menampilkan daftar unit yang perlu ditindaklanjuti.
             </p>
 
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Dihitung otomatis dari data</p>
@@ -620,7 +646,7 @@ function Evaluasi() {
                 <ItemChecklistOtomatis
                   key={i}
                   item={item}
-                  terbuka={itemTerbuka === i}
+                  terbuka={!item.terpenuhi && !itemDitutupManual.has(i)}
                   onToggle={() => toggleItemTerbuka(i)}
                 />
               ))}
