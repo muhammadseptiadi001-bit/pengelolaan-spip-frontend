@@ -98,6 +98,26 @@ function TooltipModernBertumpuk({ active, payload, label }) {
   )
 }
 
+// Label angka di dalam tiap segmen bar bertumpuk (Tren Status Kelayakan).
+// Cuma dirender kalau nilainya > 0, supaya segmen kosong (0 unit) tidak menampilkan angka "0"
+// yang mengotori grafik — sama seperti perilaku LabelList biasa di grafik Distribusi Temuan.
+function LabelJumlahBarBertumpuk(props) {
+  const { x, y, width, height, value } = props
+  if (!value) return null
+  return (
+    <text
+      x={x + width / 2}
+      y={y + height / 2}
+      fill="#fff"
+      textAnchor="middle"
+      dominantBaseline="middle"
+      style={{ fontSize: 11, fontWeight: 700 }}
+    >
+      {value}
+    </text>
+  )
+}
+
 const varianKontainer = {
   tersembunyi: {},
   tampil: { transition: { staggerChildren: 0.12 } }
@@ -109,7 +129,7 @@ const varianKartu = {
 }
 
 // ===== KOMPONEN CHECKLIST DENGAN DETAIL UNIT BERMASALAH (default terbuka kalau ada masalah) =====
-// Setiap baris unit bermasalah sekarang punya tombol "Tindak Lanjuti" yang membawa user
+// Setiap baris unit bermasalah punya tombol "Tindak Lanjuti" yang membawa user
 // ke halaman Data SPIP (/data) dengan filter Nomor Unit otomatis terisi, supaya bisa langsung
 // diedit di sana (nama petugas, status kompetensi, tindak lanjut, dsb) tanpa harus dicari manual.
 
@@ -309,16 +329,21 @@ function Evaluasi() {
     return daftarUnit.filter((u) => kunciBulan(u.tanggalUjiTerakhir) === bulanTerpilih)
   }, [daftarUnit, bulanTerpilih])
 
-  // Tingkat Kepatuhan dihitung dari rata-rata skor 3 kriteria per unit (jadwal, kompetensi
-  // petugas, tindak lanjut temuan) — BUKAN "harus lolos ketiganya sekaligus baru dihitung".
-  // Dengan cara lama, satu unit yang jadwalnya aman tapi datanya petugas belum lengkap
-  // dianggap gagal total (skor 0), sehingga persentase bisa anjlok ke 0% meski progresnya
-  // sebagian sudah tercapai. Sekarang tiap unit dapat skor 0/3, 1/3, 2/3, atau 3/3, dan
-  // persentase adalah rata-rata skor seluruh unit — jadi progres parsial ikut tercermin.
+  // Tingkat Kepatuhan dihitung dari rata-rata skor 3 kriteria per unit: jadwal, kompetensi
+  // petugas, dan status kelayakan penuh. Skor per unit 0/3 sampai 3/3, lalu dirata-rata
+  // seluruh unit — jadi progres parsial tetap tercermin (tidak langsung 0% kalau baru 1 kriteria
+  // yang belum terpenuhi).
+  //
+  // Kriteria ketiga (kelayakanOk) SENGAJA hanya bernilai true kalau statusKelayakan === "Layak".
+  // Unit dengan status "Layak Dengan Catatan" TIDAK dihitung 100% patuh di sini, meskipun kolom
+  // Tindak Lanjut-nya sudah diisi — karena status "Dengan Catatan" berarti masih ada yang perlu
+  // dituntaskan sebelum benar-benar dinyatakan layak penuh. Ini beda dengan checklist "Seluruh
+  // tindak lanjut sudah dilaksanakan" di bawah, yang cuma mengecek apakah kolom tindak lanjut
+  // sudah diisi atau belum (dua hal itu sengaja dipisah, jangan digabung lagi).
   const kepatuhan = useMemo(() => {
     let aman = 0, mendekati = 0, lewat = 0
     let totalSkor = 0
-    let jumlahJadwalOk = 0, jumlahPetugasOk = 0, jumlahTindakLanjutOk = 0
+    let jumlahJadwalOk = 0, jumlahPetugasOk = 0, jumlahKelayakanOk = 0
 
     dataUnitTerfilter.forEach((u) => {
       const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
@@ -329,13 +354,13 @@ function Evaluasi() {
 
       const jadwalOk = label !== "Sudah Lewat"
       const petugasOk = u.statusKompetensi === "Bersertifikat / Kompeten"
-      const tindakLanjutOk = !((u.statusKelayakan === "Tidak Layak" || u.statusKelayakan === "Layak Dengan Catatan") && !u.tindakLanjut)
+      const kelayakanOk = u.statusKelayakan === "Layak"
 
       if (jadwalOk) jumlahJadwalOk++
       if (petugasOk) jumlahPetugasOk++
-      if (tindakLanjutOk) jumlahTindakLanjutOk++
+      if (kelayakanOk) jumlahKelayakanOk++
 
-      const skorUnit = ((jadwalOk ? 1 : 0) + (petugasOk ? 1 : 0) + (tindakLanjutOk ? 1 : 0)) / 3
+      const skorUnit = ((jadwalOk ? 1 : 0) + (petugasOk ? 1 : 0) + (kelayakanOk ? 1 : 0)) / 3
       totalSkor += skorUnit
     })
 
@@ -343,11 +368,11 @@ function Evaluasi() {
     const persentase = total === 0 ? 0 : Math.round((totalSkor / total) * 100)
     const persentaseJadwal = total === 0 ? 0 : Math.round((jumlahJadwalOk / total) * 100)
     const persentasePetugas = total === 0 ? 0 : Math.round((jumlahPetugasOk / total) * 100)
-    const persentaseTindakLanjut = total === 0 ? 0 : Math.round((jumlahTindakLanjutOk / total) * 100)
+    const persentaseKelayakan = total === 0 ? 0 : Math.round((jumlahKelayakanOk / total) * 100)
 
     return {
       aman, mendekati, lewat, total, persentase,
-      persentaseJadwal, persentasePetugas, persentaseTindakLanjut,
+      persentaseJadwal, persentasePetugas, persentaseKelayakan,
     }
   }, [dataUnitTerfilter])
 
@@ -458,11 +483,11 @@ function Evaluasi() {
       label: "Tingkat Kepatuhan",
       nilai: kepatuhan.persentase,
       satuan: "%",
-      sub: "Rata-rata pemenuhan jadwal, kompetensi petugas & tindak lanjut per unit",
+      sub: "Rata-rata pemenuhan jadwal, kompetensi petugas & status kelayakan penuh per unit",
       breakdown: [
         { label: "Jadwal", nilai: kepatuhan.persentaseJadwal },
         { label: "Petugas", nilai: kepatuhan.persentasePetugas },
-        { label: "Tindak Lanjut", nilai: kepatuhan.persentaseTindakLanjut },
+        { label: "Kelayakan", nilai: kepatuhan.persentaseKelayakan },
       ],
       icon: ShieldCheck, warna: "text-blue-600 dark:text-blue-400", aksen: "from-blue-400 to-blue-600", bgIkon: "bg-gradient-to-br from-blue-400 to-blue-600"
     },
@@ -594,9 +619,15 @@ function Evaluasi() {
                   <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
                   <Tooltip content={<TooltipModernBertumpuk />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="Layak" stackId="a" fill="url(#gradLayak)" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="Tidak Layak" stackId="a" fill="url(#gradTidakLayak)" />
-                  <Bar dataKey="Layak Dengan Catatan" stackId="a" fill="url(#gradLayakCatatan)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Layak" stackId="a" fill="url(#gradLayak)" radius={[0, 0, 0, 0]}>
+                    <LabelList dataKey="Layak" content={<LabelJumlahBarBertumpuk />} />
+                  </Bar>
+                  <Bar dataKey="Tidak Layak" stackId="a" fill="url(#gradTidakLayak)">
+                    <LabelList dataKey="Tidak Layak" content={<LabelJumlahBarBertumpuk />} />
+                  </Bar>
+                  <Bar dataKey="Layak Dengan Catatan" stackId="a" fill="url(#gradLayakCatatan)" radius={[6, 6, 0, 0]}>
+                    <LabelList dataKey="Layak Dengan Catatan" content={<LabelJumlahBarBertumpuk />} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             )}
