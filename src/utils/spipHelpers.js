@@ -11,7 +11,6 @@ export const PILIHAN_JANGKA_WAKTU = [
 
 export const PILIHAN_JENIS_SPIP = ["Peralatan Pertambangan", "Instalasi Pertambangan", "Bangunan"]
 
-// Struktur 3 tingkat: Kategori SPIP -> Kelompok Alat -> daftar Jenis Alat
 export const KELOMPOK_ALAT = {
   "Peralatan Pertambangan": {
     "Alat Berat Pemindah Tanah Mekanis": [
@@ -201,18 +200,25 @@ export const KELOMPOK_ALAT = {
   },
 }
 
-// Daftar nama kelompok per kategori SPIP, untuk mengisi dropdown "Kelompok Alat"
 export function daftarKelompok(jenisSpip) {
   return Object.keys(KELOMPOK_ALAT[jenisSpip] || {})
 }
 
-// Daftar jenis alat untuk satu kelompok tertentu
 export function daftarAlatDalamKelompok(jenisSpip, kelompok) {
   return KELOMPOK_ALAT[jenisSpip]?.[kelompok] || []
 }
 
-// Versi flat (semua jenis alat digabung per kategori) - dipakai untuk filter "Semua Kelompok"
-// dan supaya file lain yang masih pakai PILIHAN_JENIS_ALAT tetap jalan
+// Cari nama kelompok yang memuat suatu jenis alat, untuk kategori tertentu.
+// Dipakai di Data SPIP (form edit) dan Evaluasi (distribusi temuan per kelompok).
+export function cariKelompokUntukAlat(jenisSpip, jenisAlat) {
+  const kelompokObj = KELOMPOK_ALAT[jenisSpip]
+  if (!kelompokObj) return null
+  for (const [namaKelompok, daftarAlat] of Object.entries(kelompokObj)) {
+    if (daftarAlat.includes(jenisAlat)) return namaKelompok
+  }
+  return null
+}
+
 export const PILIHAN_JENIS_ALAT = Object.fromEntries(
   Object.entries(KELOMPOK_ALAT).map(([kategori, kelompokObj]) => [
     kategori,

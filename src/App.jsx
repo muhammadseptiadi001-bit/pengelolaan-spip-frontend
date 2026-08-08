@@ -10,6 +10,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const InputData = lazy(() => import('./pages/InputData'))
 const DataSPIP = lazy(() => import('./pages/DataSPIP'))
 const Riwayat = lazy(() => import('./pages/Riwayat'))
+const Evaluasi = lazy(() => import('./pages/Evaluasi'))
 
 function LoadingHalaman() {
   return (
@@ -51,6 +52,14 @@ function App() {
             element={
               <Suspense fallback={<LoadingHalaman />}>
                 <DataSPIP />
+              </Suspense>
+            }
+          />
+          <Route
+            path="evaluasi"
+            element={
+              <Suspense fallback={<LoadingHalaman />}>
+                <Evaluasi />
               </Suspense>
             }
           />

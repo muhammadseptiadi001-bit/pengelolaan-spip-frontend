@@ -6,6 +6,7 @@ import {
   FilePlus,
   ClipboardList,
   History,
+  BarChart3,
   MoreHorizontal,
   X,
   Moon,
@@ -27,6 +28,7 @@ function Sidebar() {
     { path: "/", label: "Dashboard", icon: LayoutDashboard },
     { path: "/input", label: "Input Data", icon: FilePlus },
     { path: "/data", label: "Data SPIP", icon: ClipboardList },
+    { path: "/evaluasi", label: "Evaluasi", icon: BarChart3 },
     { path: "/riwayat", label: "Riwayat", icon: History },
   ]
 
@@ -110,7 +112,7 @@ function Sidebar() {
       {/* ===== MOBILE BOTTOM NAVIGATION BAR ===== */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
         <div className="flex items-center justify-around">
-          {menuItems.map((item) => {
+          {menuItems.slice(0, 4).map((item) => {
             const Icon = item.icon
             return (
               <NavLink
@@ -149,7 +151,7 @@ function Sidebar() {
         </div>
       </div>
 
-      {/* ===== BOTTOM SHEET: Menu Lainnya (Mode Gelap, User, Logout) ===== */}
+      {/* ===== BOTTOM SHEET: Menu Lainnya (Riwayat, Mode Gelap, User, Logout) ===== */}
       <AnimatePresence>
         {menuLainnyaTerbuka && (
           <>
@@ -174,6 +176,21 @@ function Sidebar() {
                   <X size={20} />
                 </button>
               </div>
+
+              {menuItems.slice(4).map((item) => {
+                const Icon = item.icon
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={tutupMenuLainnya}
+                    className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 mb-1 flex items-center gap-2"
+                  >
+                    <Icon size={16} />
+                    {item.label}
+                  </NavLink>
+                )
+              })}
 
               <button
                 onClick={handleToggleTema}
