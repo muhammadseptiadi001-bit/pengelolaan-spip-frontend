@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts'
+import { motion, AnimatePresence } from 'framer-motion'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Cell, LabelList } from 'recharts'
 import {
   ShieldCheck, AlertTriangle, XCircle, TrendingUp, ClipboardList,
-  CheckCircle2, Circle, Info, Loader2
+  CheckCircle2, Circle, Info, Loader2, ChevronDown, Boxes
 } from 'lucide-react'
 import { API_URL, hitungJatuhTempo, hitungStatusWaktu, formatTanggal, cariKelompokUntukAlat } from '../utils/spipHelpers'
 import { apiFetch } from '../utils/apiFetch'
@@ -25,18 +25,154 @@ function labelBulan(kunci) {
   return `${NAMA_BULAN[Number(bulan) - 1]} ${tahun}`
 }
 
-function KartuRingkasan({ label, nilai, sub, warna, icon: Icon }) {
+// ===== KOMPONEN BERGAYA SAMA DENGAN DASHBOARD =====
+
+function AngkaCountUp({ nilai, durasi = 800 }) {
+  const [tampil, setTampil] = useState(0)
+
+  useEffect(() => {
+    let mulai = null
+    let frameId
+
+    function animasikan(waktuSekarang) {
+      if (mulai === null) mulai = waktuSekarang
+      const progres = Math.min((waktuSekarang - mulai) / durasi, 1)
+      setTampil(Math.floor(progres * nilai))
+      if (progres < 1) {
+        frameId = requestAnimationFrame(animasikan)
+      } else {
+        setTampil(nilai)
+      }
+    }
+
+    frameId = requestAnimationFrame(animasikan)
+    return () => cancelAnimationFrame(frameId)
+  }, [nilai, durasi])
+
+  return <>{tampil}</>
+}
+
+function KartuSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:border dark:border-gray-800 relative overflow-hidden">
-      <div className={`absolute left-0 top-0 h-full w-1 ${warna}`}></div>
-      <div className="pl-2 flex items-start justify-between">
-        <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-          <p className="text-2xl font-extrabold text-gray-800 dark:text-white mt-1">{nilai}</p>
-          {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{sub}</p>}
+    <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:border dark:border-gray-800 animate-pulse">
+      <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
+      <div className="h-7 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+    </div>
+  )
+}
+
+function GrafikSkeleton() {
+  return (
+    <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800 animate-pulse">
+      <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+      <div className="h-[260px] bg-gray-100 dark:bg-gray-800 rounded-xl"></div>
+    </div>
+  )
+}
+
+function TooltipModern({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null
+  return (
+    <div className="bg-gray-900/95 dark:bg-black/90 backdrop-blur-sm text-white rounded-xl shadow-2xl px-4 py-2.5 border border-white/10">
+      <p className="text-xs text-gray-300 mb-0.5">{label}</p>
+      <p className="text-sm font-bold" style={{ color: payload[0].payload.fill || "#3b82f6" }}>
+        {payload[0].value} unit
+      </p>
+    </div>
+  )
+}
+
+function TooltipModernBertumpuk({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null
+  return (
+    <div className="bg-gray-900/95 dark:bg-black/90 backdrop-blur-sm text-white rounded-xl shadow-2xl px-4 py-2.5 border border-white/10">
+      <p className="text-xs text-gray-300 mb-1">{label}</p>
+      {payload.filter((p) => p.value > 0).map((p) => (
+        <p key={p.dataKey} className="text-sm font-bold flex items-center gap-1.5" style={{ color: p.color }}>
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }}></span>
+          {p.dataKey}: {p.value} unit
+        </p>
+      ))}
+    </div>
+  )
+}
+
+const varianKontainer = {
+  tersembunyi: {},
+  tampil: { transition: { staggerChildren: 0.12 } }
+}
+
+const varianKartu = {
+  tersembunyi: { opacity: 0, y: 16 },
+  tampil: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
+}
+
+// ===== KOMPONEN CHECKLIST DENGAN DETAIL UNIT BERMASALAH =====
+
+function ItemChecklistOtomatis({ item, terbuka, onToggle }) {
+  const punyaDetail = item.unitBermasalah && item.unitBermasalah.length > 0
+
+  return (
+    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 overflow-hidden">
+      <button
+        type="button"
+        onClick={punyaDetail ? onToggle : undefined}
+        className={`w-full flex items-start gap-3 p-3 text-left ${punyaDetail ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/90 transition-colors" : "cursor-default"}`}
+      >
+        {item.terpenuhi ? (
+          <CheckCircle2 size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
+        ) : (
+          <XCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
+        )}
+        <div className="flex-1">
+          <p className="text-sm text-gray-700 dark:text-gray-200">{item.teks}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.keterangan}</p>
         </div>
-        {Icon && <Icon size={20} className="text-gray-300 dark:text-gray-600" />}
-      </div>
+        {punyaDetail && (
+          <ChevronDown
+            size={16}
+            className={`text-gray-400 flex-shrink-0 mt-0.5 transition-transform ${terbuka ? "rotate-180" : ""}`}
+          />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {terbuka && punyaDetail && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-gray-200 dark:border-gray-700 px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2 mt-1">
+                Unit yang belum memenuhi ({item.unitBermasalah.length})
+              </p>
+              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                      <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Unit</th>
+                      <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nomor Unit</th>
+                      <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Alasan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {item.unitBermasalah.map((u, i) => (
+                      <tr key={i} className="border-b last:border-b-0 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                        <td className="py-2 px-3 text-sm text-gray-800 dark:text-gray-200">{u.namaUnit}</td>
+                        <td className="py-2 px-3 text-sm text-gray-800 dark:text-gray-200">{u.nomorUnit}</td>
+                        <td className="py-2 px-3 text-sm text-red-600 dark:text-red-400">{u.alasan}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -70,6 +206,7 @@ function Evaluasi() {
   const [daftarUnit, setDaftarUnit] = useState([])
   const [sedangMuat, setSedangMuat] = useState(true)
   const [bulanTerpilih, setBulanTerpilih] = useState("Semua")
+  const [itemTerbuka, setItemTerbuka] = useState(null)
 
   const [pengaturanPerusahaan, setPengaturanPerusahaan] = useState({
     prosedurPengujianKelayakan: false,
@@ -134,6 +271,10 @@ function Evaluasi() {
     }
   }
 
+  function toggleItemTerbuka(index) {
+    setItemTerbuka((sebelumnya) => (sebelumnya === index ? null : index))
+  }
+
   const daftarBulanTersedia = useMemo(() => {
     const set = new Set(daftarUnit.map((u) => kunciBulan(u.tanggalUjiTerakhir)))
     return Array.from(set).sort().reverse()
@@ -196,26 +337,40 @@ function Evaluasi() {
 
   const checklistOtomatis = useMemo(() => {
     const totalData = daftarUnit.length
-    const jumlahLewat = daftarUnit.filter((u) => {
-      const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
-      return hitungStatusWaktu(jatuhTempo).label === "Sudah Lewat"
-    }).length
-    const unitBermasalahBelumTindakLanjut = daftarUnit.filter(
-      (u) => (u.statusKelayakan === "Tidak Layak" || u.statusKelayakan === "Layak Dengan Catatan") && !u.tindakLanjut
-    ).length
+
+    const unitLewatTempo = daftarUnit
+      .map((u) => {
+        const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
+        return { ...u, jatuhTempo, statusWaktu: hitungStatusWaktu(jatuhTempo).label }
+      })
+      .filter((u) => u.statusWaktu === "Sudah Lewat")
+
+    const unitPetugasBelumKompeten = daftarUnit.filter(
+      (u) => u.statusKompetensi !== "Bersertifikat / Kompeten"
+    )
     const unitDenganPetugasTercatat = daftarUnit.filter((u) => u.namaPetugas && u.namaPetugas.trim() !== "").length
     const unitPetugasKompeten = daftarUnit.filter((u) => u.statusKompetensi === "Bersertifikat / Kompeten").length
+
+    const unitBermasalahBelumTindakLanjut = daftarUnit.filter(
+      (u) => (u.statusKelayakan === "Tidak Layak" || u.statusKelayakan === "Layak Dengan Catatan") && !u.tindakLanjut
+    )
 
     return [
       {
         teks: "Daftar sarana, prasarana, instalasi, dan peralatan pertambangan sudah dibuat",
         terpenuhi: totalData > 0,
         keterangan: `${totalData} unit terdaftar di aplikasi`,
+        unitBermasalah: [],
       },
       {
         teks: "Pelaksanaan pengujian dan pemantauan sesuai jadwal yang ditetapkan (tidak ada yang lewat jatuh tempo)",
-        terpenuhi: totalData > 0 && jumlahLewat === 0,
-        keterangan: jumlahLewat === 0 ? "Semua unit masih dalam jadwal" : `${jumlahLewat} unit sudah lewat jatuh tempo`,
+        terpenuhi: totalData > 0 && unitLewatTempo.length === 0,
+        keterangan: unitLewatTempo.length === 0 ? "Semua unit masih dalam jadwal" : `${unitLewatTempo.length} unit sudah lewat jatuh tempo`,
+        unitBermasalah: unitLewatTempo.map((u) => ({
+          namaUnit: u.namaUnit,
+          nomorUnit: u.nomorUnit,
+          alasan: `Lewat jatuh tempo sejak ${formatTanggal(u.jatuhTempo)}`,
+        })),
       },
       {
         teks: "Pengujian dan pemantauan dilakukan oleh Tenaga Teknis Pertambangan yang Berkompeten",
@@ -223,16 +378,35 @@ function Evaluasi() {
         keterangan: unitDenganPetugasTercatat === 0
           ? "Belum ada unit yang mencatat nama & status kompetensi petugas"
           : `${unitPetugasKompeten} dari ${totalData} unit tercatat diperiksa petugas berkompeten (${unitDenganPetugasTercatat} unit sudah mencatat data petugas)`,
+        unitBermasalah: unitPetugasBelumKompeten.map((u) => ({
+          namaUnit: u.namaUnit,
+          nomorUnit: u.nomorUnit,
+          alasan: !u.namaPetugas || u.namaPetugas.trim() === ""
+            ? "Belum ada petugas tercatat"
+            : "Status kompetensi: Belum Bersertifikat",
+        })),
       },
       {
         teks: "Seluruh tindak lanjut dan perbaikan atas temuan sudah dilaksanakan",
-        terpenuhi: unitBermasalahBelumTindakLanjut === 0,
-        keterangan: unitBermasalahBelumTindakLanjut === 0
+        terpenuhi: unitBermasalahBelumTindakLanjut.length === 0,
+        keterangan: unitBermasalahBelumTindakLanjut.length === 0
           ? "Tidak ada unit bermasalah yang belum ditindaklanjuti"
-          : `${unitBermasalahBelumTindakLanjut} unit bermasalah belum ada catatan tindak lanjut`,
+          : `${unitBermasalahBelumTindakLanjut.length} unit bermasalah belum ada catatan tindak lanjut`,
+        unitBermasalah: unitBermasalahBelumTindakLanjut.map((u) => ({
+          namaUnit: u.namaUnit,
+          nomorUnit: u.nomorUnit,
+          alasan: `Status: ${u.statusKelayakan}, belum ada tindak lanjut`,
+        })),
       },
     ]
   }, [daftarUnit])
+
+  const kartuRingkasan = [
+    { label: "Tingkat Kepatuhan", nilai: kepatuhan.persentase, satuan: "%", sub: `dari ${kepatuhan.total} unit ${bulanTerpilih === "Semua" ? "" : "pada bulan ini"}`, icon: ShieldCheck, warna: "text-blue-600 dark:text-blue-400", aksen: "from-blue-400 to-blue-600", bgIkon: "bg-gradient-to-br from-blue-400 to-blue-600" },
+    { label: "Aman", nilai: kepatuhan.aman, satuan: "", sub: null, icon: CheckCircle2, warna: "text-green-600 dark:text-green-400", aksen: "from-green-400 to-emerald-600", bgIkon: "bg-gradient-to-br from-green-400 to-emerald-600" },
+    { label: "Mendekati Jatuh Tempo", nilai: kepatuhan.mendekati, satuan: "", sub: null, icon: AlertTriangle, warna: "text-yellow-600 dark:text-yellow-400", aksen: "from-yellow-400 to-amber-600", bgIkon: "bg-gradient-to-br from-yellow-400 to-amber-600" },
+    { label: "Sudah Lewat", nilai: kepatuhan.lewat, satuan: "", sub: null, icon: XCircle, warna: "text-red-600 dark:text-red-400", aksen: "from-red-400 to-rose-600", bgIkon: "bg-gradient-to-br from-red-400 to-rose-600" },
+  ]
 
   return (
     <div>
@@ -258,84 +432,134 @@ function Evaluasi() {
       </div>
 
       {sedangMuat ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:border dark:border-gray-800 animate-pulse h-24"></div>
-          ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <KartuSkeleton />
+          <KartuSkeleton />
+          <KartuSkeleton />
+          <KartuSkeleton />
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <KartuRingkasan
-              label="Tingkat Kepatuhan"
-              nilai={`${kepatuhan.persentase}%`}
-              sub={`dari ${kepatuhan.total} unit ${bulanTerpilih === "Semua" ? "" : "pada bulan ini"}`}
-              warna="bg-blue-500"
-              icon={ShieldCheck}
-            />
-            <KartuRingkasan label="Aman" nilai={kepatuhan.aman} warna="bg-green-500" icon={CheckCircle2} />
-            <KartuRingkasan label="Mendekati Jatuh Tempo" nilai={kepatuhan.mendekati} warna="bg-yellow-500" icon={AlertTriangle} />
-            <KartuRingkasan label="Sudah Lewat" nilai={kepatuhan.lewat} warna="bg-red-500" icon={XCircle} />
-          </div>
+        <motion.div
+          variants={varianKontainer}
+          initial="tersembunyi"
+          animate="tampil"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
+        >
+          {kartuRingkasan.map((kartu) => {
+            const Icon = kartu.icon
+            return (
+              <motion.div
+                key={kartu.label}
+                variants={varianKartu}
+                whileHover={{ scale: 1.03, boxShadow: "0px 12px 28px rgba(0,0,0,0.14)" }}
+                transition={{ duration: 0.2 }}
+                className="relative overflow-hidden bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:border dark:border-gray-800 flex items-start justify-between"
+              >
+                <div className={`absolute left-0 top-0 h-full w-1 bg-gradient-to-b ${kartu.aksen}`}></div>
+                <div className="pl-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{kartu.label}</p>
+                  <p className={`text-3xl font-extrabold tracking-tight ${kartu.warna}`}>
+                    <AngkaCountUp nilai={kartu.nilai} />{kartu.satuan}
+                  </p>
+                  {kartu.sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{kartu.sub}</p>}
+                </div>
+                <div className={`p-2.5 rounded-xl ${kartu.bgIkon} shadow-lg`}>
+                  <Icon size={20} className="text-white" />
+                </div>
+              </motion.div>
+            )
+          })}
+        </motion.div>
+      )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
-            >
-              <div className="flex items-center gap-2 mb-4">
+      {sedangMuat ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <GrafikSkeleton />
+          <GrafikSkeleton />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.008, boxShadow: "0px 16px 32px rgba(0,0,0,0.1)" }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
                 <TrendingUp size={18} className="text-blue-500" />
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Tren Status Kelayakan</h2>
               </div>
-              {trenStatusKelayakan.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">Belum ada data untuk ditampilkan.</p>
-              ) : (
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={trenStatusKelayakan} barCategoryGap="25%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.15} vertical={false} />
-                    <XAxis dataKey="bulan" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-                    <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="Layak" stackId="a" fill={WARNA_KELAYAKAN["Layak"]} radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="Tidak Layak" stackId="a" fill={WARNA_KELAYAKAN["Tidak Layak"]} />
-                    <Bar dataKey="Layak Dengan Catatan" stackId="a" fill={WARNA_KELAYAKAN["Layak Dengan Catatan"]} radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </motion.div>
+              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                6 bulan terakhir
+              </span>
+            </div>
+            {trenStatusKelayakan.length === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500">Belum ada data untuk ditampilkan.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={trenStatusKelayakan} barCategoryGap="25%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.15} vertical={false} />
+                  <XAxis dataKey="bulan" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+                  <Tooltip content={<TooltipModernBertumpuk />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="Layak" stackId="a" fill={WARNA_KELAYAKAN["Layak"]} radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="Tidak Layak" stackId="a" fill={WARNA_KELAYAKAN["Tidak Layak"]} />
+                  <Bar dataKey="Layak Dengan Catatan" stackId="a" fill={WARNA_KELAYAKAN["Layak Dengan Catatan"]} radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
-            >
-              <div className="flex items-center gap-2 mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.008, boxShadow: "0px 16px 32px rgba(0,0,0,0.1)" }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
                 <ClipboardList size={18} className="text-blue-500" />
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Distribusi Temuan per Kelompok</h2>
               </div>
-              {distribusiTemuan.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">Belum ada unit dengan catatan temuan.</p>
-              ) : (
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={distribusiTemuan} layout="vertical" margin={{ left: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.15} horizontal={false} />
-                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="nama" width={180} tick={{ fontSize: 10.5 }} axisLine={false} tickLine={false} />
-                    <Tooltip />
-                    <Bar dataKey="jumlah" fill="#3b82f6" radius={[0, 6, 6, 0]} maxBarSize={22} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </motion.div>
-          </div>
+              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                {distribusiTemuan.reduce((a, b) => a + b.jumlah, 0)} total
+              </span>
+            </div>
+            {distribusiTemuan.length === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500">Belum ada unit dengan catatan temuan.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={distribusiTemuan} layout="vertical" margin={{ left: 8, right: 24 }}>
+                  <defs>
+                    <linearGradient id="gradTemuan" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.6} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.15} horizontal={false} />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="nama" width={180} tick={{ fontSize: 10.5 }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<TooltipModern />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+                  <Bar dataKey="jumlah" fill="url(#gradTemuan)" radius={[0, 8, 8, 0]} maxBarSize={22}>
+                    <LabelList dataKey="jumlah" position="right" style={{ fontSize: 12, fontWeight: 700 }} className="fill-gray-700 dark:fill-gray-200" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </motion.div>
+        </div>
+      )}
 
+      {!sedangMuat && (
+        <>
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
             className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800 mb-6"
           >
             <div className="flex items-center justify-between mb-4">
@@ -377,9 +601,9 @@ function Evaluasi() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
             className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
           >
             <div className="flex items-center gap-2 mb-1">
@@ -387,23 +611,18 @@ function Evaluasi() {
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Checklist Kepatuhan Regulasi</h2>
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-              Berdasarkan kriteria penilaian Kepmen ESDM soal kelayakan sarana/prasarana/instalasi/peralatan dan pengelolaan Keselamatan Operasi Pertambangan.
+              Berdasarkan kriteria penilaian Kepmen ESDM soal kelayakan sarana/prasarana/instalasi/peralatan dan pengelolaan Keselamatan Operasi Pertambangan. Klik item yang bertanda ✗ untuk melihat unit mana saja yang belum memenuhi.
             </p>
 
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Dihitung otomatis dari data</p>
             <div className="flex flex-col gap-2 mb-5">
               {checklistOtomatis.map((item, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60">
-                  {item.terpenuhi ? (
-                    <CheckCircle2 size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <XCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
-                  )}
-                  <div>
-                    <p className="text-sm text-gray-700 dark:text-gray-200">{item.teks}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.keterangan}</p>
-                  </div>
-                </div>
+                <ItemChecklistOtomatis
+                  key={i}
+                  item={item}
+                  terbuka={itemTerbuka === i}
+                  onToggle={() => toggleItemTerbuka(i)}
+                />
               ))}
             </div>
 
