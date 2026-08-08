@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileText, PackagePlus, Building2, Tags, Layers, Wrench, Hash,
-  CalendarDays, Timer, ShieldCheck, ClipboardList,
+  CalendarDays, Timer, ShieldCheck, ClipboardList, UserCheck, BadgeCheck,
   ImagePlus, FileUp, X, Loader2
 } from 'lucide-react'
 import { API_URL, UPLOAD_URL, PILIHAN_JANGKA_WAKTU, PILIHAN_JENIS_SPIP, daftarKelompok, daftarAlatDalamKelompok } from '../utils/spipHelpers'
@@ -16,6 +16,8 @@ const LABEL_PER_KATEGORI = {
   "Instalasi Pertambangan": { kelompok: "Kelompok Instalasi", item: "Jenis Instalasi" },
   "Bangunan": { kelompok: "Kelompok Bangunan", item: "Jenis Bangunan" },
 }
+
+const PILIHAN_STATUS_KOMPETENSI = ["Bersertifikat / Kompeten", "Belum Bersertifikat"]
 
 function labelKelompok(jenisSpip) {
   return LABEL_PER_KATEGORI[jenisSpip]?.kelompok || "Kelompok"
@@ -83,6 +85,8 @@ function InputData() {
   const [tanggalUji, setTanggalUji] = useState("")
   const [jangkaWaktuBulan, setJangkaWaktuBulan] = useState(24)
   const [statusKelayakan, setStatusKelayakan] = useState("Layak")
+  const [namaPetugas, setNamaPetugas] = useState("")
+  const [statusKompetensi, setStatusKompetensi] = useState(PILIHAN_STATUS_KOMPETENSI[0])
   const [temuan, setTemuan] = useState("")
   const [tindakLanjut, setTindakLanjut] = useState("")
   const [fotoBase64, setFotoBase64] = useState(null)
@@ -184,6 +188,8 @@ function InputData() {
       tanggalUjiTerakhir: tanggalUji,
       jangkaWaktuBulan,
       statusKelayakan,
+      namaPetugas,
+      statusKompetensi,
       temuan,
       tindakLanjut,
       foto: fotoBase64,
@@ -213,6 +219,8 @@ function InputData() {
       setTanggalUji("")
       setJangkaWaktuBulan(24)
       setStatusKelayakan("Layak")
+      setNamaPetugas("")
+      setStatusKompetensi(PILIHAN_STATUS_KOMPETENSI[0])
       setTemuan("")
       setTindakLanjut("")
       setFotoBase64(null)
@@ -220,7 +228,6 @@ function InputData() {
       setPdfData(null)
       ambilDaftarNomorUnit()
     } catch (err) {
-      console.error(err)
       tampilkanToast("Gagal menambahkan unit. Pastikan server backend sedang berjalan.", "gagal")
     } finally {
       setSedangSimpan(false)
@@ -380,6 +387,33 @@ function InputData() {
               <option value="Layak">Layak</option>
               <option value="Tidak Layak">Tidak Layak</option>
               <option value="Layak Dengan Catatan">Layak Dengan Catatan</option>
+            </select>
+          </div>
+        </div>
+
+        <SectionTitle>Petugas Pemeriksaan</SectionTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <LabelIkon icon={UserCheck}>Nama Tenaga Teknis Penguji</LabelIkon>
+            <input
+              type="text"
+              placeholder="Nama petugas yang melakukan pengujian/pemantauan"
+              value={namaPetugas}
+              onChange={(e) => setNamaPetugas(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <LabelIkon icon={BadgeCheck}>Status Kompetensi</LabelIkon>
+            <select
+              value={statusKompetensi}
+              onChange={(e) => setStatusKompetensi(e.target.value)}
+              className={inputClass}
+            >
+              {PILIHAN_STATUS_KOMPETENSI.map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
             </select>
           </div>
         </div>

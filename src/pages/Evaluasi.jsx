@@ -21,16 +21,11 @@ function labelBulan(kunci) {
   return `${NAMA_BULAN[Number(bulan) - 1]} ${tahun}`
 }
 
-// Checklist manual berdasarkan kriteria penilaian Kepmen ESDM soal Kelayakan Sarana/Prasarana/
-// Instalasi/Peralatan dan Pengelolaan Keselamatan Operasi Pertambangan. Item ini belum bisa
-// dihitung otomatis dari data aplikasi (butuh field tambahan seperti "Tenaga Teknis Penguji").
+// Item ini masih menunggu backend (Opsi B): disimpan sebagai pengaturan tingkat perusahaan,
+// bukan per unit, jadi belum bisa dihitung otomatis dari data unit yang ada.
 const CHECKLIST_MANUAL = [
   "Prosedur pengujian kelayakan sarana, prasarana, instalasi, dan peralatan sudah disusun dan ditetapkan",
-  "Pengujian kelayakan dilakukan oleh Tenaga Teknis Pertambangan yang Berkompeten",
   "Prosedur pemantauan, pengukuran kinerja, evaluasi, dan tindak lanjut pengelolaan Keselamatan Operasi Pertambangan sudah ada",
-  "Pemantauan dan evaluasi pengelolaan Keselamatan Operasi Pertambangan dilaksanakan sesuai prosedur",
-  "Pemantauan dilakukan oleh Tenaga Teknis Pertambangan yang Berkompeten di bidang Keselamatan Operasi",
-  "Rencana tindak lanjut dan perbaikan ditetapkan berdasarkan hasil evaluasi",
 ]
 
 function KartuRingkasan({ label, nilai, sub, warna, icon: Icon }) {
@@ -74,7 +69,6 @@ function Evaluasi() {
     }
   }
 
-  // Daftar bulan (berdasarkan Tanggal Uji Terakhir) yang tersedia di data, terbaru dulu
   const daftarBulanTersedia = useMemo(() => {
     const set = new Set(daftarUnit.map((u) => kunciBulan(u.tanggalUjiTerakhir)))
     return Array.from(set).sort().reverse()
@@ -85,7 +79,6 @@ function Evaluasi() {
     return daftarUnit.filter((u) => kunciBulan(u.tanggalUjiTerakhir) === bulanTerpilih)
   }, [daftarUnit, bulanTerpilih])
 
-  // === 1. Tingkat kepatuhan uji kelayakan ===
   const kepatuhan = useMemo(() => {
     let aman = 0, mendekati = 0, lewat = 0
     dataUnitTerfilter.forEach((u) => {
@@ -100,7 +93,6 @@ function Evaluasi() {
     return { aman, mendekati, lewat, total, persentase }
   }, [dataUnitTerfilter])
 
-  // === 2. Tren status kelayakan per bulan uji terakhir (6 bulan terbaru yang ada datanya) ===
   const trenStatusKelayakan = useMemo(() => {
     const perBulan = {}
     daftarUnit.forEach((u) => {
@@ -114,7 +106,6 @@ function Evaluasi() {
       .map(([kunci, jumlah]) => ({ bulan: labelBulan(kunci), ...jumlah }))
   }, [daftarUnit])
 
-  // === 3. Backlog unit sudah lewat jatuh tempo, diurutkan paling lama menunggak ===
   const backlogLewatTempo = useMemo(() => {
     return daftarUnit
       .map((u) => {
@@ -125,7 +116,6 @@ function Evaluasi() {
       .sort((a, b) => a.jatuhTempo - b.jatuhTempo)
   }, [daftarUnit])
 
-  // === 4. Distribusi temuan per kelompok alat/instalasi/bangunan ===
   const distribusiTemuan = useMemo(() => {
     const perKelompok = {}
     daftarUnit
@@ -139,7 +129,6 @@ function Evaluasi() {
       .sort((a, b) => b.jumlah - a.jumlah)
   }, [daftarUnit])
 
-  // === Checklist otomatis (3 item bisa dihitung dari data yang ada) ===
   const checklistOtomatis = useMemo(() => {
     const totalData = daftarUnit.length
     const jumlahLewat = daftarUnit.filter((u) => {
@@ -149,6 +138,8 @@ function Evaluasi() {
     const unitBermasalahBelumTindakLanjut = daftarUnit.filter(
       (u) => (u.statusKelayakan === "Tidak Layak" || u.statusKelayakan === "Layak Dengan Catatan") && !u.tindakLanjut
     ).length
+    const unitDenganPetugasTercatat = daftarUnit.filter((u) => u.namaPetugas && u.namaPetugas.trim() !== "").length
+    const unitPetugasKompeten = daftarUnit.filter((u) => u.statusKompetensi === "Bersertifikat / Kompeten").length
 
     return [
       {
@@ -157,9 +148,16 @@ function Evaluasi() {
         keterangan: `${totalData} unit terdaftar di aplikasi`,
       },
       {
-        teks: "Pelaksanaan pengujian kelayakan sesuai jadwal yang ditetapkan (tidak ada yang lewat jatuh tempo)",
-        terpenuhi: jumlahLewat === 0,
+        teks: "Pelaksanaan pengujian dan pemantauan sesuai jadwal yang ditetapkan (tidak ada yang lewat jatuh tempo)",
+        terpenuhi: totalData > 0 && jumlahLewat === 0,
         keterangan: jumlahLewat === 0 ? "Semua unit masih dalam jadwal" : `${jumlahLewat} unit sudah lewat jatuh tempo`,
+      },
+      {
+        teks: "Pengujian dan pemantauan dilakukan oleh Tenaga Teknis Pertambangan yang Berkompeten",
+        terpenuhi: totalData > 0 && unitPetugasKompeten === totalData,
+        keterangan: unitDenganPetugasTercatat === 0
+          ? "Belum ada unit yang mencatat nama & status kompetensi petugas"
+          : `${unitPetugasKompeten} dari ${totalData} unit tercatat diperiksa petugas berkompeten (${unitDenganPetugasTercatat} unit sudah mencatat data petugas)`,
       },
       {
         teks: "Seluruh tindak lanjut dan perbaikan atas temuan sudah dilaksanakan",
@@ -202,7 +200,6 @@ function Evaluasi() {
         </div>
       ) : (
         <>
-          {/* === Ringkasan Kepatuhan === */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <KartuRingkasan
               label="Tingkat Kepatuhan"
@@ -211,28 +208,12 @@ function Evaluasi() {
               warna="bg-blue-500"
               icon={ShieldCheck}
             />
-            <KartuRingkasan
-              label="Aman"
-              nilai={kepatuhan.aman}
-              warna="bg-green-500"
-              icon={CheckCircle2}
-            />
-            <KartuRingkasan
-              label="Mendekati Jatuh Tempo"
-              nilai={kepatuhan.mendekati}
-              warna="bg-yellow-500"
-              icon={AlertTriangle}
-            />
-            <KartuRingkasan
-              label="Sudah Lewat"
-              nilai={kepatuhan.lewat}
-              warna="bg-red-500"
-              icon={XCircle}
-            />
+            <KartuRingkasan label="Aman" nilai={kepatuhan.aman} warna="bg-green-500" icon={CheckCircle2} />
+            <KartuRingkasan label="Mendekati Jatuh Tempo" nilai={kepatuhan.mendekati} warna="bg-yellow-500" icon={AlertTriangle} />
+            <KartuRingkasan label="Sudah Lewat" nilai={kepatuhan.lewat} warna="bg-red-500" icon={XCircle} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* === Tren Status Kelayakan === */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -260,7 +241,6 @@ function Evaluasi() {
               )}
             </motion.div>
 
-            {/* === Distribusi Temuan per Kelompok === */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -287,7 +267,6 @@ function Evaluasi() {
             </motion.div>
           </div>
 
-          {/* === Backlog Unit Lewat Jatuh Tempo === */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -332,7 +311,6 @@ function Evaluasi() {
             )}
           </motion.div>
 
-          {/* === Checklist Kepatuhan Regulasi === */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -364,7 +342,7 @@ function Evaluasi() {
               ))}
             </div>
 
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Perlu verifikasi manual</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Menunggu backend (pengaturan tingkat perusahaan)</p>
             <div className="flex flex-col gap-2">
               {CHECKLIST_MANUAL.map((teks, i) => (
                 <div key={i} className="flex items-start gap-3 p-3 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
@@ -376,7 +354,7 @@ function Evaluasi() {
 
             <div className="flex items-start gap-2 mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs">
               <Info size={14} className="flex-shrink-0 mt-0.5" />
-              <p>Item "Perlu verifikasi manual" belum bisa dihitung otomatis karena aplikasi belum mencatat data Tenaga Teknis Penguji/prosedur tertulis. Bisa ditambahkan sebagai field baru kalau diperlukan.</p>
+              <p>2 item di atas akan otomatis begitu backend punya endpoint pengaturan tingkat perusahaan (sedang dikerjakan).</p>
             </div>
           </motion.div>
         </>
