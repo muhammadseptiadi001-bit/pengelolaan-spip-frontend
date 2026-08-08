@@ -3,13 +3,17 @@ import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts'
 import {
   ShieldCheck, AlertTriangle, XCircle, TrendingUp, ClipboardList,
-  CheckCircle2, Circle, Info
+  CheckCircle2, Circle, Info, Loader2
 } from 'lucide-react'
 import { API_URL, hitungJatuhTempo, hitungStatusWaktu, formatTanggal, cariKelompokUntukAlat } from '../utils/spipHelpers'
 import { apiFetch } from '../utils/apiFetch'
 
 const WARNA_KELAYAKAN = { "Layak": "#22c55e", "Tidak Layak": "#ef4444", "Layak Dengan Catatan": "#eab308" }
 const NAMA_BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+
+// Endpoint pengaturan tingkat perusahaan diturunkan dari API_URL (mengganti /unit menjadi /pengaturan-perusahaan).
+// Kalau API_URL tidak diakhiri "/unit", ganti baris ini dengan URL endpoint yang benar.
+const PENGATURAN_URL = API_URL.replace('/unit', '/pengaturan-perusahaan')
 
 function kunciBulan(tanggalString) {
   const d = new Date(tanggalString)
@@ -20,13 +24,6 @@ function labelBulan(kunci) {
   const [tahun, bulan] = kunci.split("-")
   return `${NAMA_BULAN[Number(bulan) - 1]} ${tahun}`
 }
-
-// Item ini masih menunggu backend (Opsi B): disimpan sebagai pengaturan tingkat perusahaan,
-// bukan per unit, jadi belum bisa dihitung otomatis dari data unit yang ada.
-const CHECKLIST_MANUAL = [
-  "Prosedur pengujian kelayakan sarana, prasarana, instalasi, dan peralatan sudah disusun dan ditetapkan",
-  "Prosedur pemantauan, pengukuran kinerja, evaluasi, dan tindak lanjut pengelolaan Keselamatan Operasi Pertambangan sudah ada",
-]
 
 function KartuRingkasan({ label, nilai, sub, warna, icon: Icon }) {
   return (
@@ -44,13 +41,45 @@ function KartuRingkasan({ label, nilai, sub, warna, icon: Icon }) {
   )
 }
 
+function ItemPengaturan({ teks, terpenuhi, sedangSimpan, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={sedangSimpan}
+      className="w-full flex items-start gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors text-left disabled:opacity-60 disabled:cursor-wait"
+    >
+      {sedangSimpan ? (
+        <Loader2 size={18} className="text-blue-500 animate-spin flex-shrink-0 mt-0.5" />
+      ) : terpenuhi ? (
+        <CheckCircle2 size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
+      ) : (
+        <Circle size={18} className="text-gray-300 dark:text-gray-600 flex-shrink-0 mt-0.5" />
+      )}
+      <div>
+        <p className="text-sm text-gray-700 dark:text-gray-200">{teks}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+          {terpenuhi ? "Sudah ditetapkan — klik untuk batalkan" : "Belum ditetapkan — klik untuk tandai sudah ditetapkan"}
+        </p>
+      </div>
+    </button>
+  )
+}
+
 function Evaluasi() {
   const [daftarUnit, setDaftarUnit] = useState([])
   const [sedangMuat, setSedangMuat] = useState(true)
   const [bulanTerpilih, setBulanTerpilih] = useState("Semua")
 
+  const [pengaturanPerusahaan, setPengaturanPerusahaan] = useState({
+    prosedurPengujianKelayakan: false,
+    prosedurPemantauanEvaluasi: false,
+  })
+  const [sedangSimpanPengaturan, setSedangSimpanPengaturan] = useState(null)
+
   useEffect(() => {
     ambilData()
+    ambilPengaturan()
   }, [])
 
   async function ambilData() {
@@ -66,6 +95,42 @@ function Evaluasi() {
       console.error(err)
     } finally {
       setSedangMuat(false)
+    }
+  }
+
+  async function ambilPengaturan() {
+    try {
+      const response = await apiFetch(PENGATURAN_URL)
+      const hasil = await response.json()
+      setPengaturanPerusahaan({
+        prosedurPengujianKelayakan: !!hasil.prosedurPengujianKelayakan,
+        prosedurPemantauanEvaluasi: !!hasil.prosedurPemantauanEvaluasi,
+      })
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  async function ubahPengaturan(field) {
+    const payload = { ...pengaturanPerusahaan, [field]: !pengaturanPerusahaan[field] }
+
+    setSedangSimpanPengaturan(field)
+    try {
+      const response = await apiFetch(PENGATURAN_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) throw new Error("Gagal menyimpan pengaturan")
+      const hasil = await response.json()
+      setPengaturanPerusahaan({
+        prosedurPengujianKelayakan: !!hasil.prosedurPengujianKelayakan,
+        prosedurPemantauanEvaluasi: !!hasil.prosedurPemantauanEvaluasi,
+      })
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSedangSimpanPengaturan(null)
     }
   }
 
@@ -342,19 +407,25 @@ function Evaluasi() {
               ))}
             </div>
 
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Menunggu backend (pengaturan tingkat perusahaan)</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Pengaturan Tingkat Perusahaan</p>
             <div className="flex flex-col gap-2">
-              {CHECKLIST_MANUAL.map((teks, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-                  <Circle size={18} className="text-gray-300 dark:text-gray-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{teks}</p>
-                </div>
-              ))}
+              <ItemPengaturan
+                teks="Prosedur pengujian kelayakan sarana, prasarana, instalasi, dan peralatan sudah disusun dan ditetapkan"
+                terpenuhi={pengaturanPerusahaan.prosedurPengujianKelayakan}
+                sedangSimpan={sedangSimpanPengaturan === "prosedurPengujianKelayakan"}
+                onToggle={() => ubahPengaturan("prosedurPengujianKelayakan")}
+              />
+              <ItemPengaturan
+                teks="Prosedur pemantauan, pengukuran kinerja, evaluasi, dan tindak lanjut pengelolaan Keselamatan Operasi Pertambangan sudah ada"
+                terpenuhi={pengaturanPerusahaan.prosedurPemantauanEvaluasi}
+                sedangSimpan={sedangSimpanPengaturan === "prosedurPemantauanEvaluasi"}
+                onToggle={() => ubahPengaturan("prosedurPemantauanEvaluasi")}
+              />
             </div>
 
             <div className="flex items-start gap-2 mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs">
               <Info size={14} className="flex-shrink-0 mt-0.5" />
-              <p>2 item di atas akan otomatis begitu backend punya endpoint pengaturan tingkat perusahaan (sedang dikerjakan).</p>
+              <p>Kedua item di atas berlaku untuk seluruh perusahaan (bukan per unit). Klik item untuk menandai sudah/belum ditetapkan.</p>
             </div>
           </motion.div>
         </>
