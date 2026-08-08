@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LabelList } from 'recharts'
 import {
   ShieldCheck, AlertTriangle, XCircle, TrendingUp, ClipboardList,
-  CheckCircle2, Circle, Info, Loader2, ChevronDown
+  CheckCircle2, Circle, Info, Loader2, ChevronDown, ListChecks
 } from 'lucide-react'
-import { API_URL, hitungJatuhTempo, hitungStatusWaktu, formatTanggal, cariKelompokUntukAlat } from '../utils/spipHelpers'
+import { API_URL, PILIHAN_JENIS_SPIP, hitungJatuhTempo, hitungStatusWaktu, formatTanggal, cariKelompokUntukAlat } from '../utils/spipHelpers'
 import { apiFetch } from '../utils/apiFetch'
 
 const WARNA_KELAYAKAN = { "Layak": "#22c55e", "Tidak Layak": "#ef4444", "Layak Dengan Catatan": "#eab308" }
@@ -241,9 +241,27 @@ function ItemPengaturan({ teks, terpenuhi, sedangSimpan, onToggle }) {
   )
 }
 
+// Tanda centang/silang kecil untuk sel tabel "Detail Evaluasi per Unit"
+function TandaKriteria({ terpenuhi }) {
+  return terpenuhi ? (
+    <CheckCircle2 size={16} className="text-green-500 mx-auto" />
+  ) : (
+    <XCircle size={16} className="text-red-400 mx-auto" />
+  )
+}
+
+function warnaPersentase(persen) {
+  if (persen >= 80) return "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+  if (persen >= 50) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
+  return "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+}
+
 function Evaluasi() {
+  const navigate = useNavigate()
   const [daftarUnit, setDaftarUnit] = useState([])
   const [sedangMuat, setSedangMuat] = useState(true)
+  const [filterPerusahaan, setFilterPerusahaan] = useState("Semua")
+  const [filterJenisSpip, setFilterJenisSpip] = useState("Semua")
   const [bulanTerpilih, setBulanTerpilih] = useState("Semua")
   const [itemDitutupManual, setItemDitutupManual] = useState(() => new Set())
 
@@ -319,15 +337,37 @@ function Evaluasi() {
     })
   }
 
-  const daftarBulanTersedia = useMemo(() => {
-    const set = new Set(daftarUnit.map((u) => kunciBulan(u.tanggalUjiTerakhir)))
-    return Array.from(set).sort().reverse()
+  // Daftar nama perusahaan diambil dari SELURUH data (tidak ikut kefilter Kategori SPIP/Bulan),
+  // supaya pilihan di dropdown Filter Perusahaan tetap lengkap apa pun filter lain yang aktif.
+  const daftarPerusahaan = useMemo(() => {
+    const nama = new Set()
+    daftarUnit.forEach((u) => {
+      if (u.namaPerusahaan) nama.add(u.namaPerusahaan)
+    })
+    return Array.from(nama).sort()
   }, [daftarUnit])
 
+  // Data dasar: sudah kefilter Perusahaan + Kategori SPIP, TAPI BELUM kefilter Bulan.
+  // Dipakai untuk semua section KECUALI kartu ringkasan kepatuhan (yang juga ikut kefilter bulan)
+  // dan daftar pilihan bulan (supaya opsinya menyesuaikan perusahaan/kategori yang lagi dipilih).
+  const dataDasarTerfilter = useMemo(() => {
+    return daftarUnit.filter((u) => {
+      const cocokPerusahaan = filterPerusahaan === "Semua" || u.namaPerusahaan === filterPerusahaan
+      const cocokJenisSpip = filterJenisSpip === "Semua" || u.jenisSpip === filterJenisSpip
+      return cocokPerusahaan && cocokJenisSpip
+    })
+  }, [daftarUnit, filterPerusahaan, filterJenisSpip])
+
+  const daftarBulanTersedia = useMemo(() => {
+    const set = new Set(dataDasarTerfilter.map((u) => kunciBulan(u.tanggalUjiTerakhir)))
+    return Array.from(set).sort().reverse()
+  }, [dataDasarTerfilter])
+
+  // Data untuk kartu ringkasan kepatuhan: dataDasarTerfilter + filter Bulan
   const dataUnitTerfilter = useMemo(() => {
-    if (bulanTerpilih === "Semua") return daftarUnit
-    return daftarUnit.filter((u) => kunciBulan(u.tanggalUjiTerakhir) === bulanTerpilih)
-  }, [daftarUnit, bulanTerpilih])
+    if (bulanTerpilih === "Semua") return dataDasarTerfilter
+    return dataDasarTerfilter.filter((u) => kunciBulan(u.tanggalUjiTerakhir) === bulanTerpilih)
+  }, [dataDasarTerfilter, bulanTerpilih])
 
   // Tingkat Kepatuhan dihitung dari rata-rata skor 3 kriteria per unit: jadwal, kompetensi
   // petugas, dan status kelayakan penuh. Skor per unit 0/3 sampai 3/3, lalu dirata-rata
@@ -376,9 +416,12 @@ function Evaluasi() {
     }
   }, [dataUnitTerfilter])
 
+  // Tren, backlog, distribusi temuan, checklist, dan detail per unit semuanya pakai
+  // dataDasarTerfilter (ikut Filter Perusahaan + Kategori SPIP), TAPI TIDAK ikut filter Bulan —
+  // supaya tren tetap menampilkan beberapa bulan sekaligus, bukan cuma 1 bulan yang dipilih.
   const trenStatusKelayakan = useMemo(() => {
     const perBulan = {}
-    daftarUnit.forEach((u) => {
+    dataDasarTerfilter.forEach((u) => {
       const kunci = kunciBulan(u.tanggalUjiTerakhir)
       if (!perBulan[kunci]) perBulan[kunci] = { Layak: 0, "Tidak Layak": 0, "Layak Dengan Catatan": 0 }
       if (perBulan[kunci][u.statusKelayakan] !== undefined) perBulan[kunci][u.statusKelayakan] += 1
@@ -387,21 +430,21 @@ function Evaluasi() {
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
       .map(([kunci, jumlah]) => ({ bulan: labelBulan(kunci), ...jumlah }))
-  }, [daftarUnit])
+  }, [dataDasarTerfilter])
 
   const backlogLewatTempo = useMemo(() => {
-    return daftarUnit
+    return dataDasarTerfilter
       .map((u) => {
         const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
         return { ...u, jatuhTempo, statusWaktu: hitungStatusWaktu(jatuhTempo).label }
       })
       .filter((u) => u.statusWaktu === "Sudah Lewat")
       .sort((a, b) => a.jatuhTempo - b.jatuhTempo)
-  }, [daftarUnit])
+  }, [dataDasarTerfilter])
 
   const distribusiTemuan = useMemo(() => {
     const perKelompok = {}
-    daftarUnit
+    dataDasarTerfilter
       .filter((u) => u.temuan && u.temuan.trim() !== "")
       .forEach((u) => {
         const kelompok = cariKelompokUntukAlat(u.jenisSpip, u.jenisAlat) || "Lainnya"
@@ -410,25 +453,25 @@ function Evaluasi() {
     return Object.entries(perKelompok)
       .map(([nama, jumlah]) => ({ nama, jumlah }))
       .sort((a, b) => b.jumlah - a.jumlah)
-  }, [daftarUnit])
+  }, [dataDasarTerfilter])
 
   const checklistOtomatis = useMemo(() => {
-    const totalData = daftarUnit.length
+    const totalData = dataDasarTerfilter.length
 
-    const unitLewatTempo = daftarUnit
+    const unitLewatTempo = dataDasarTerfilter
       .map((u) => {
         const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
         return { ...u, jatuhTempo, statusWaktu: hitungStatusWaktu(jatuhTempo).label }
       })
       .filter((u) => u.statusWaktu === "Sudah Lewat")
 
-    const unitPetugasBelumKompeten = daftarUnit.filter(
+    const unitPetugasBelumKompeten = dataDasarTerfilter.filter(
       (u) => u.statusKompetensi !== "Bersertifikat / Kompeten"
     )
-    const unitDenganPetugasTercatat = daftarUnit.filter((u) => u.namaPetugas && u.namaPetugas.trim() !== "").length
-    const unitPetugasKompeten = daftarUnit.filter((u) => u.statusKompetensi === "Bersertifikat / Kompeten").length
+    const unitDenganPetugasTercatat = dataDasarTerfilter.filter((u) => u.namaPetugas && u.namaPetugas.trim() !== "").length
+    const unitPetugasKompeten = dataDasarTerfilter.filter((u) => u.statusKompetensi === "Bersertifikat / Kompeten").length
 
-    const unitBermasalahBelumTindakLanjut = daftarUnit.filter(
+    const unitBermasalahBelumTindakLanjut = dataDasarTerfilter.filter(
       (u) => (u.statusKelayakan === "Tidak Layak" || u.statusKelayakan === "Layak Dengan Catatan") && !u.tindakLanjut
     )
 
@@ -436,7 +479,7 @@ function Evaluasi() {
       {
         teks: "Daftar sarana, prasarana, instalasi, dan peralatan pertambangan sudah dibuat",
         terpenuhi: totalData > 0,
-        keterangan: `${totalData} unit terdaftar di aplikasi`,
+        keterangan: `${totalData} unit terdaftar (sesuai filter aktif)`,
         unitBermasalah: [],
       },
       {
@@ -476,7 +519,44 @@ function Evaluasi() {
         })),
       },
     ]
-  }, [daftarUnit])
+  }, [dataDasarTerfilter])
+
+  // === Detail Evaluasi per Unit: tiap unit jadi baris, tiap kriteria jadi kolom Ya/Tidak ===
+  const detailEvaluasiPerUnit = useMemo(() => {
+    return dataDasarTerfilter
+      .map((u) => {
+        const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
+        const statusWaktu = hitungStatusWaktu(jatuhTempo).label
+
+        const daftarOk = true
+        const jadwalOk = statusWaktu !== "Sudah Lewat"
+        const petugasOk = u.statusKompetensi === "Bersertifikat / Kompeten"
+        const tindakLanjutOk = !(
+          (u.statusKelayakan === "Tidak Layak" || u.statusKelayakan === "Layak Dengan Catatan") && !u.tindakLanjut
+        )
+        const prosedurPengujianOk = pengaturanPerusahaan.prosedurPengujianKelayakan
+        const prosedurPemantauanOk = pengaturanPerusahaan.prosedurPemantauanEvaluasi
+
+        const jumlahTerpenuhi = [daftarOk, jadwalOk, petugasOk, tindakLanjutOk, prosedurPengujianOk, prosedurPemantauanOk]
+          .filter(Boolean).length
+        const persentase = Math.round((jumlahTerpenuhi / 6) * 100)
+
+        return {
+          id: u.id,
+          namaUnit: u.namaUnit,
+          nomorUnit: u.nomorUnit,
+          daftarOk, jadwalOk, petugasOk, tindakLanjutOk, prosedurPengujianOk, prosedurPemantauanOk,
+          statusKelayakan: u.statusKelayakan,
+          jatuhTempo,
+          persentase,
+        }
+      })
+      .sort((a, b) => a.persentase - b.persentase)
+  }, [dataDasarTerfilter, pengaturanPerusahaan])
+
+  function tindakLanjutiUnit(nomorUnit) {
+    navigate(`/data?nomorUnit=${encodeURIComponent(nomorUnit)}`)
+  }
 
   const kartuRingkasan = [
     {
@@ -498,24 +578,54 @@ function Evaluasi() {
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Evaluasi</h1>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Evaluasi kepatuhan dan kinerja program SPIP secara berkala</p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bulan Uji Terakhir</label>
-          <select
-            value={bulanTerpilih}
-            onChange={(e) => setBulanTerpilih(e.target.value)}
-            className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2"
-          >
-            <option value="Semua">Semua Waktu</option>
-            {daftarBulanTersedia.map((kunci) => (
-              <option key={kunci} value={kunci}>{labelBulan(kunci)}</option>
-            ))}
-          </select>
+        <div className="flex flex-col md:flex-row gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter Perusahaan</label>
+            <select
+              value={filterPerusahaan}
+              onChange={(e) => setFilterPerusahaan(e.target.value)}
+              className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 w-full"
+            >
+              <option value="Semua">Semua</option>
+              {daftarPerusahaan.map((nama) => (
+                <option key={nama} value={nama}>{nama}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter Kategori SPIP</label>
+            <select
+              value={filterJenisSpip}
+              onChange={(e) => setFilterJenisSpip(e.target.value)}
+              className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 w-full"
+            >
+              <option value="Semua">Semua</option>
+              {PILIHAN_JENIS_SPIP.map((jenis) => (
+                <option key={jenis} value={jenis}>{jenis}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bulan Uji Terakhir</label>
+            <select
+              value={bulanTerpilih}
+              onChange={(e) => setBulanTerpilih(e.target.value)}
+              className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 w-full"
+            >
+              <option value="Semua">Semua Waktu</option>
+              {daftarBulanTersedia.map((kunci) => (
+                <option key={kunci} value={kunci}>{labelBulan(kunci)}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -724,7 +834,7 @@ function Evaluasi() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3 }}
-            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
+            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800 mb-6"
           >
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck size={18} className="text-blue-500" />
@@ -766,6 +876,88 @@ function Evaluasi() {
               <Info size={14} className="flex-shrink-0 mt-0.5" />
               <p>Kedua item di atas berlaku untuk seluruh perusahaan (bukan per unit). Klik item untuk menandai sudah/belum ditetapkan.</p>
             </div>
+          </motion.div>
+
+          {/* === Detail Evaluasi per Unit === */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.35 }}
+            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <ListChecks size={18} className="text-blue-500" />
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Detail Evaluasi per Unit</h2>
+              </div>
+              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                {detailEvaluasiPerUnit.length} unit, diurutkan dari persentase terendah
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+              Rincian pemenuhan tiap kriteria per unit SPIP yang terdaftar. Klik "Tindak Lanjuti" untuk langsung membuka unit itu di halaman Data SPIP.
+            </p>
+
+            {detailEvaluasiPerUnit.length === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500">Tidak ada unit yang cocok dengan filter aktif.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800">
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Data SPIP</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Daftar Sarana, Prasarana, Instalasi, dan Peralatan Pertambangan Sudah Dibuat</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Pelaksanaan Pengujian dan Pemantauan Sesuai Jadwal yang Ditetapkan</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Pengujian dan Pemantauan Dilakukan oleh Tenaga Teknis Pertambangan yang Berkompeten</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Seluruh Tindak Lanjut dan Perbaikan atas Temuan Sudah Dilaksanakan</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Prosedur Pengujian Kelayakan Sarana, Prasarana, Instalasi, dan Peralatan Sudah Disusun dan Ditetapkan</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Prosedur Pemantauan, Pengukuran Kinerja, Evaluasi, dan Tindak Lanjut Pengelolaan Keselamatan Operasi Pertambangan Sudah Ada</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Status Kelayakan</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Batas Waktu Uji Kelayakan Kembali</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center whitespace-nowrap">Persentase</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailEvaluasiPerUnit.map((u) => (
+                      <tr key={u.id} className="border-b border-gray-100 dark:border-gray-800/60 text-gray-800 dark:text-gray-200">
+                        <td className="py-2.5 px-3 font-medium whitespace-nowrap">{u.nomorUnit}</td>
+                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.daftarOk} /></td>
+                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.jadwalOk} /></td>
+                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.petugasOk} /></td>
+                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.tindakLanjutOk} /></td>
+                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.prosedurPengujianOk} /></td>
+                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.prosedurPemantauanOk} /></td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                            u.statusKelayakan === "Layak" ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+                            : u.statusKelayakan === "Tidak Layak" ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+                            : "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
+                          }`}>
+                            {u.statusKelayakan}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">{formatTanggal(u.jatuhTempo)}</td>
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${warnaPersentase(u.persentase)}`}>
+                            {u.persentase}%
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => tindakLanjutiUnit(u.nomorUnit)}
+                            className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            Tindak Lanjuti →
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </motion.div>
         </>
       )}
