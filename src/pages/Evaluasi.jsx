@@ -16,6 +16,18 @@ const NAMA_BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Jul
 // Kalau API_URL tidak diakhiri "/unit", ganti baris ini dengan URL endpoint yang benar.
 const PENGATURAN_URL = API_URL.replace('/unit', '/pengaturan-perusahaan')
 
+// Daftar 7 kriteria checklist evaluasi — dipakai untuk header tabel (angka 1-7) DAN legenda
+// di atasnya, supaya kalau suatu saat kriteria berubah, cukup edit array ini di satu tempat.
+const DAFTAR_KRITERIA = [
+  { kode: "daftarOk", labelSingkat: "Daftar Alat", labelPenuh: "Daftar sarana, prasarana, instalasi, dan peralatan pertambangan sudah dibuat" },
+  { kode: "jadwalOk", labelSingkat: "Jadwal Uji", labelPenuh: "Pelaksanaan pengujian dan pemantauan sesuai jadwal yang ditetapkan" },
+  { kode: "petugasOk", labelSingkat: "Petugas", labelPenuh: "Pengujian dan pemantauan dilakukan oleh Tenaga Teknis Pertambangan yang Berkompeten" },
+  { kode: "tindakLanjutOk", labelSingkat: "Tindak Lanjut", labelPenuh: "Seluruh tindak lanjut dan perbaikan atas temuan sudah dilaksanakan" },
+  { kode: "statusKelayakanOk", labelSingkat: "Layak Penuh", labelPenuh: "Status kelayakan Layak sepenuhnya (tanpa catatan)" },
+  { kode: "prosedurPengujianOk", labelSingkat: "Prosedur Uji", labelPenuh: "Prosedur pengujian kelayakan sarana, prasarana, instalasi, dan peralatan sudah disusun dan ditetapkan" },
+  { kode: "prosedurPemantauanOk", labelSingkat: "Prosedur Pantau", labelPenuh: "Prosedur pemantauan, pengukuran kinerja, evaluasi, dan tindak lanjut pengelolaan Keselamatan Operasi Pertambangan sudah ada" },
+]
+
 function kunciBulan(tanggalString) {
   const d = new Date(tanggalString)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
@@ -30,7 +42,7 @@ function labelBulan(kunci) {
 // Dipakai baik untuk kartu ringkasan "Tingkat Kepatuhan" MAUPUN tabel "Detail Evaluasi per Unit",
 // supaya kedua tempat itu SELALU menampilkan angka yang sinkron.
 //
-// 7 kriteria yang dinilai:
+// 7 kriteria yang dinilai (lihat DAFTAR_KRITERIA di atas untuk urutan & labelnya):
 //  1. daftarOk             -> selalu true (unit ini memang sudah terdaftar)
 //  2. jadwalOk              -> status waktu bukan "Sudah Lewat"
 //  3. petugasOk             -> statusKompetensi === "Bersertifikat / Kompeten"
@@ -39,9 +51,7 @@ function labelBulan(kunci) {
 //  5. statusKelayakanOk     -> statusKelayakan PERSIS "Layak" (tanpa catatan). "Layak Dengan
 //                              Catatan" TETAP dianggap belum sepenuhnya patuh walau tindak
 //                              lanjutnya sudah diisi — karena "catatan" itu sendiri berarti
-//                              belum sempurna. Ini kriteria terpisah dari tindakLanjutOk supaya
-//                              "sudah ditindaklanjuti" dan "sudah benar-benar Layak" tidak
-//                              tertukar jadi satu hal.
+//                              belum sempurna.
 //  6. prosedurPengujianOk   -> Pengaturan Tingkat Perusahaan: prosedur pengujian kelayakan
 //  7. prosedurPemantauanOk  -> Pengaturan Tingkat Perusahaan: prosedur pemantauan & evaluasi
 // persentase = (jumlah kriteria terpenuhi / 7) x 100%
@@ -171,6 +181,19 @@ const varianKartu = {
   tampil: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
 }
 
+// Label kelompok kecil (kicker) untuk memisahkan halaman jadi blok-blok visual yang jelas:
+// Ringkasan -> Analisis -> Tindak Lanjut & Detail. Sebelumnya semua section berbaris rata
+// tanpa penanda, jadi terasa "menyatu" dan sulit dipetakan sekilas.
+function LabelKelompokSection({ children }) {
+  return (
+    <div className="flex items-center gap-2 mb-3 mt-2">
+      <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800"></div>
+      <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 whitespace-nowrap">{children}</h3>
+      <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800"></div>
+    </div>
+  )
+}
+
 // ===== KOMPONEN CHECKLIST DENGAN DETAIL UNIT BERMASALAH (default terbuka kalau ada masalah) =====
 // Setiap baris unit bermasalah punya tombol "Tindak Lanjuti" yang membawa user
 // ke halaman Data SPIP (/data) dengan filter Nomor Unit otomatis terisi, supaya bisa langsung
@@ -285,11 +308,15 @@ function ItemPengaturan({ teks, terpenuhi, sedangSimpan, onToggle }) {
 }
 
 // Tanda centang/silang kecil untuk sel tabel "Detail Evaluasi per Unit"
-function TandaKriteria({ terpenuhi }) {
-  return terpenuhi ? (
-    <CheckCircle2 size={16} className="text-green-500 mx-auto" />
-  ) : (
-    <XCircle size={16} className="text-red-400 mx-auto" />
+function TandaKriteria({ terpenuhi, judul }) {
+  return (
+    <div title={judul} className="flex justify-center">
+      {terpenuhi ? (
+        <CheckCircle2 size={16} className="text-green-500" />
+      ) : (
+        <XCircle size={16} className="text-red-400" />
+      )}
+    </div>
   )
 }
 
@@ -391,8 +418,6 @@ function Evaluasi() {
   }, [daftarUnit])
 
   // Data dasar: sudah kefilter Perusahaan + Kategori SPIP, TAPI BELUM kefilter Bulan.
-  // Dipakai untuk semua section KECUALI kartu ringkasan kepatuhan (yang juga ikut kefilter bulan)
-  // dan daftar pilihan bulan (supaya opsinya menyesuaikan perusahaan/kategori yang lagi dipilih).
   const dataDasarTerfilter = useMemo(() => {
     return daftarUnit.filter((u) => {
       const cocokPerusahaan = filterPerusahaan === "Semua" || u.namaPerusahaan === filterPerusahaan
@@ -412,10 +437,6 @@ function Evaluasi() {
     return dataDasarTerfilter.filter((u) => kunciBulan(u.tanggalUjiTerakhir) === bulanTerpilih)
   }, [dataDasarTerfilter, bulanTerpilih])
 
-  // Kartu ringkasan "Tingkat Kepatuhan" memakai hitungEvaluasiUnit() yang SAMA PERSIS dengan
-  // yang dipakai tabel "Detail Evaluasi per Unit" di bawah — persentase-nya adalah rata-rata
-  // dari persentase per unit (7 kriteria), jadi kalau "Bulan Uji Terakhir" = Semua Waktu,
-  // angka di kartu dan di tabel akan selalu sinkron untuk unit yang sama.
   const kepatuhan = useMemo(() => {
     let aman = 0, mendekati = 0, lewat = 0
     let totalPersentase = 0
@@ -449,9 +470,6 @@ function Evaluasi() {
     }
   }, [dataUnitTerfilter, pengaturanPerusahaan])
 
-  // Tren, backlog, distribusi temuan, checklist, dan detail per unit semuanya pakai
-  // dataDasarTerfilter (ikut Filter Perusahaan + Kategori SPIP), TAPI TIDAK ikut filter Bulan —
-  // supaya tren tetap menampilkan beberapa bulan sekaligus, bukan cuma 1 bulan yang dipilih.
   const trenStatusKelayakan = useMemo(() => {
     const perBulan = {}
     dataDasarTerfilter.forEach((u) => {
@@ -554,9 +572,6 @@ function Evaluasi() {
     ]
   }, [dataDasarTerfilter])
 
-  // === Detail Evaluasi per Unit: tiap unit jadi baris, tiap kriteria jadi kolom Ya/Tidak ===
-  // Memakai hitungEvaluasiUnit() yang sama dengan kartu "Tingkat Kepatuhan" — lihat komentar di
-  // atas fungsi itu.
   const detailEvaluasiPerUnit = useMemo(() => {
     return dataDasarTerfilter
       .map((u) => {
@@ -648,8 +663,11 @@ function Evaluasi() {
         </div>
       </div>
 
+      {/* ===== BLOK 1: RINGKASAN ===== */}
+      <LabelKelompokSection>Ringkasan Kepatuhan</LabelKelompokSection>
+
       {sedangMuat ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <KartuSkeleton />
           <KartuSkeleton />
           <KartuSkeleton />
@@ -660,7 +678,7 @@ function Evaluasi() {
           variants={varianKontainer}
           initial="tersembunyi"
           animate="tampil"
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
         >
           {kartuRingkasan.map((kartu) => {
             const Icon = kartu.icon
@@ -701,13 +719,16 @@ function Evaluasi() {
         </motion.div>
       )}
 
+      {/* ===== BLOK 2: ANALISIS ===== */}
+      <LabelKelompokSection>Analisis Tren & Temuan</LabelKelompokSection>
+
       {sedangMuat ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <GrafikSkeleton />
           <GrafikSkeleton />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -805,6 +826,9 @@ function Evaluasi() {
 
       {!sedangMuat && (
         <>
+          {/* ===== BLOK 3: TINDAK LANJUT & DETAIL ===== */}
+          <LabelKelompokSection>Tindak Lanjut &amp; Kepatuhan Regulasi</LabelKelompokSection>
+
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -913,9 +937,23 @@ function Evaluasi() {
                 {detailEvaluasiPerUnit.length} unit, diurutkan dari persentase terendah
               </span>
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-              Rincian pemenuhan tiap kriteria per unit SPIP yang terdaftar. Klik "Tindak Lanjuti" untuk langsung membuka unit itu di halaman Data SPIP.
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
+              Rincian pemenuhan tiap kriteria per unit SPIP yang terdaftar. Arahkan kursor ke tanda ✓/✗ untuk lihat nama kriteria lengkap. Klik "Tindak Lanjuti" untuk langsung membuka unit itu di halaman Data SPIP.
             </p>
+
+            {/* Legenda kriteria — dipakai supaya header tabel di bawah cukup ditulis angka
+                1-7, tidak perlu kalimat panjang berulang di tiap kolom. */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 mb-4">
+              {DAFTAR_KRITERIA.map((k, i) => (
+                <div
+                  key={k.kode}
+                  title={k.labelPenuh}
+                  className="text-[11px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/60 rounded-lg px-2 py-1.5 leading-snug"
+                >
+                  <span className="font-bold text-gray-600 dark:text-gray-300">{i + 1}.</span> {k.labelSingkat}
+                </div>
+              ))}
+            </div>
 
             {detailEvaluasiPerUnit.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-gray-500">Tidak ada unit yang cocok dengan filter aktif.</p>
@@ -925,15 +963,17 @@ function Evaluasi() {
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800">
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Data SPIP</th>
-                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Daftar Sarana, Prasarana, Instalasi, dan Peralatan Pertambangan Sudah Dibuat</th>
-                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Pelaksanaan Pengujian dan Pemantauan Sesuai Jadwal yang Ditetapkan</th>
-                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Pengujian dan Pemantauan Dilakukan oleh Tenaga Teknis Pertambangan yang Berkompeten</th>
-                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Seluruh Tindak Lanjut dan Perbaikan atas Temuan Sudah Dilaksanakan</th>
-                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Status Kelayakan Layak Penuh (Tanpa Catatan)</th>
-                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Prosedur Pengujian Kelayakan Sarana, Prasarana, Instalasi, dan Peralatan Sudah Disusun dan Ditetapkan</th>
-                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Prosedur Pemantauan, Pengukuran Kinerja, Evaluasi, dan Tindak Lanjut Pengelolaan Keselamatan Operasi Pertambangan Sudah Ada</th>
+                      {DAFTAR_KRITERIA.map((k, i) => (
+                        <th
+                          key={k.kode}
+                          title={k.labelPenuh}
+                          className="py-2.5 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 text-center w-10 cursor-help"
+                        >
+                          {i + 1}
+                        </th>
+                      ))}
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Status Kelayakan</th>
-                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Batas Waktu Uji Kelayakan Kembali</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Jatuh Tempo</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center whitespace-nowrap">Persentase</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Aksi</th>
                     </tr>
@@ -942,13 +982,11 @@ function Evaluasi() {
                     {detailEvaluasiPerUnit.map((u) => (
                       <tr key={u.id} className="border-b border-gray-100 dark:border-gray-800/60 text-gray-800 dark:text-gray-200">
                         <td className="py-2.5 px-3 font-medium whitespace-nowrap">{u.nomorUnit}</td>
-                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.daftarOk} /></td>
-                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.jadwalOk} /></td>
-                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.petugasOk} /></td>
-                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.tindakLanjutOk} /></td>
-                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.statusKelayakanOk} /></td>
-                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.prosedurPengujianOk} /></td>
-                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.prosedurPemantauanOk} /></td>
+                        {DAFTAR_KRITERIA.map((k) => (
+                          <td key={k.kode} className="py-2.5 px-2">
+                            <TandaKriteria terpenuhi={u[k.kode]} judul={k.labelPenuh} />
+                          </td>
+                        ))}
                         <td className="py-2.5 px-3 whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                             u.statusKelayakan === "Layak" ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
