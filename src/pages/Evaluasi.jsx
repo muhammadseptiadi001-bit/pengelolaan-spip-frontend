@@ -194,116 +194,128 @@ function LabelKelompokSection({ children }) {
   )
 }
 
-// ===== KOMPONEN CHECKLIST DENGAN DETAIL UNIT BERMASALAH (default terbuka kalau ada masalah) =====
-// Setiap baris unit bermasalah punya tombol "Tindak Lanjuti" yang membawa user
-// ke halaman Data SPIP (/data) dengan filter Nomor Unit otomatis terisi, supaya bisa langsung
-// diedit di sana (nama petugas, status kompetensi, tindak lanjut, dsb) tanpa harus dicari manual.
+// ===== CHECKLIST KEPATUHAN REGULASI — VERSI RINGKAS (GRID KARTU KECIL) =====
+// Sebelumnya tiap item checklist adalah baris penuh lebar dengan expand sendiri-sendiri,
+// jadi section ini jadi sangat panjang dan mendorong tabel "Detail Evaluasi per Unit" ke bawah.
+// Sekarang: 4 item otomatis + 2 item pengaturan perusahaan ditampilkan sebagai kartu kecil
+// dalam satu grid (seperti kartu ringkasan di atas). Kartu yang belum terpenuhi tetap kelihatan
+// jelas (border merah + ikon silang). Detail unit bermasalah tidak lagi expand per-kartu,
+// tapi tampil di SATU panel bersama di bawah grid — jadi tinggi section jauh lebih hemat.
 
-function ItemChecklistOtomatis({ item, terbuka, onToggle }) {
-  const navigate = useNavigate()
+function KartuKriteriaOtomatis({ item, labelSingkat, aktif, onPilih }) {
   const punyaDetail = item.unitBermasalah && item.unitBermasalah.length > 0
 
-  function tindakLanjutiUnit(nomorUnit) {
-    navigate(`/data?nomorUnit=${encodeURIComponent(nomorUnit)}`)
-  }
-
   return (
-    <div className={`rounded-xl overflow-hidden ${item.terpenuhi ? "bg-gray-50 dark:bg-gray-800/60" : "bg-red-50/60 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40"}`}>
-      <button
-        type="button"
-        onClick={punyaDetail ? onToggle : undefined}
-        className={`w-full flex items-start gap-3 p-3 text-left ${punyaDetail ? "cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors" : "cursor-default"}`}
-      >
+    <button
+      type="button"
+      onClick={punyaDetail ? onPilih : undefined}
+      title={item.teks}
+      className={`flex flex-col gap-1.5 p-3 rounded-xl border text-left transition-colors ${
+        aktif
+          ? "border-blue-400 dark:border-blue-500 bg-blue-50/70 dark:bg-blue-950/30 ring-1 ring-blue-200 dark:ring-blue-900"
+          : item.terpenuhi
+            ? "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 hover:border-gray-300 dark:hover:border-gray-600"
+            : "border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/20 hover:border-red-300 dark:hover:border-red-700"
+      } ${punyaDetail ? "cursor-pointer" : "cursor-default"}`}
+    >
+      <div className="flex items-center justify-between">
         {item.terpenuhi ? (
-          <CheckCircle2 size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
+          <CheckCircle2 size={16} className="text-green-500 flex-shrink-0" />
         ) : (
-          <XCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
+          <XCircle size={16} className="text-red-500 flex-shrink-0" />
         )}
-        <div className="flex-1">
-          <p className="text-sm text-gray-700 dark:text-gray-200">{item.teks}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.keterangan}</p>
-        </div>
         {punyaDetail && (
-          <ChevronDown
-            size={16}
-            className={`text-gray-400 flex-shrink-0 mt-0.5 transition-transform ${terbuka ? "rotate-180" : ""}`}
-          />
+          <span className="flex items-center gap-1">
+            <span className="text-[10px] font-bold text-red-500 dark:text-red-400">{item.unitBermasalah.length}</span>
+            <ChevronDown size={13} className={`text-gray-400 transition-transform ${aktif ? "rotate-180" : ""}`} />
+          </span>
         )}
-      </button>
-
-      <AnimatePresence initial={false}>
-        {terbuka && punyaDetail && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="border-t border-gray-200 dark:border-gray-700 px-3 py-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-red-500 dark:text-red-400 mb-2 mt-1">
-                Perlu ditindaklanjuti — {item.unitBermasalah.length} unit
-              </p>
-              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                      <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Unit</th>
-                      <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nomor Unit</th>
-                      <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Alasan Belum Memenuhi</th>
-                      <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {item.unitBermasalah.map((u, i) => (
-                      <tr key={i} className="border-b last:border-b-0 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
-                        <td className="py-2 px-3 text-sm text-gray-800 dark:text-gray-200">{u.namaUnit}</td>
-                        <td className="py-2 px-3 text-sm text-gray-800 dark:text-gray-200">{u.nomorUnit}</td>
-                        <td className="py-2 px-3 text-sm text-red-600 dark:text-red-400">{u.alasan}</td>
-                        <td className="py-2 px-3">
-                          <button
-                            type="button"
-                            onClick={() => tindakLanjutiUnit(u.nomorUnit)}
-                            className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
-                          >
-                            Tindak Lanjuti →
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      </div>
+      <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 leading-snug">{labelSingkat}</p>
+      <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug line-clamp-2">{item.keterangan}</p>
+    </button>
   )
 }
 
-function ItemPengaturan({ teks, terpenuhi, sedangSimpan, onToggle }) {
+function KartuPengaturan({ teks, labelSingkat, terpenuhi, sedangSimpan, onToggle }) {
   return (
     <button
       type="button"
       onClick={onToggle}
       disabled={sedangSimpan}
-      className="w-full flex items-start gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors text-left disabled:opacity-60 disabled:cursor-wait"
+      title={teks}
+      className="flex flex-col gap-1.5 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 text-left transition-colors disabled:opacity-60 disabled:cursor-wait"
     >
-      {sedangSimpan ? (
-        <Loader2 size={18} className="text-blue-500 animate-spin flex-shrink-0 mt-0.5" />
-      ) : terpenuhi ? (
-        <CheckCircle2 size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
-      ) : (
-        <Circle size={18} className="text-gray-300 dark:text-gray-600 flex-shrink-0 mt-0.5" />
-      )}
-      <div>
-        <p className="text-sm text-gray-700 dark:text-gray-200">{teks}</p>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-          {terpenuhi ? "Sudah ditetapkan — klik untuk batalkan" : "Belum ditetapkan — klik untuk tandai sudah ditetapkan"}
-        </p>
+      <div className="flex items-center justify-between">
+        {sedangSimpan ? (
+          <Loader2 size={16} className="text-blue-500 animate-spin flex-shrink-0" />
+        ) : terpenuhi ? (
+          <CheckCircle2 size={16} className="text-green-500 flex-shrink-0" />
+        ) : (
+          <Circle size={16} className="text-gray-300 dark:text-gray-600 flex-shrink-0" />
+        )}
+        <span className="text-[9px] font-bold uppercase tracking-wide text-blue-400 dark:text-blue-500">Perusahaan</span>
       </div>
+      <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 leading-snug">{labelSingkat}</p>
+      <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
+        {terpenuhi ? "Sudah ditetapkan — klik untuk batalkan" : "Klik untuk tandai sudah ditetapkan"}
+      </p>
     </button>
+  )
+}
+
+// Panel detail TUNGGAL yang dipakai bersama oleh semua kartu kriteria otomatis — hanya satu
+// yang bisa terbuka dalam satu waktu, jadi tidak ada lagi tumpukan tabel expand di bawah tiap kartu.
+function PanelDetailKriteria({ item, onTindakLanjuti }) {
+  return (
+    <AnimatePresence initial={false}>
+      {item && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="overflow-hidden"
+        >
+          <div className="mt-3 rounded-xl border border-red-100 dark:border-red-900/40 overflow-hidden">
+            <div className="px-3 py-2 bg-red-50/70 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/40">
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">{item.teks}</p>
+              <p className="text-[11px] text-red-500 dark:text-red-400 mt-0.5">Perlu ditindaklanjuti — {item.unitBermasalah.length} unit</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                    <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Unit</th>
+                    <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nomor Unit</th>
+                    <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Alasan Belum Memenuhi</th>
+                    <th className="py-2 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {item.unitBermasalah.map((u, i) => (
+                    <tr key={i} className="border-b last:border-b-0 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                      <td className="py-2 px-3 text-sm text-gray-800 dark:text-gray-200">{u.namaUnit}</td>
+                      <td className="py-2 px-3 text-sm text-gray-800 dark:text-gray-200">{u.nomorUnit}</td>
+                      <td className="py-2 px-3 text-sm text-red-600 dark:text-red-400">{u.alasan}</td>
+                      <td className="py-2 px-3">
+                        <button
+                          type="button"
+                          onClick={() => onTindakLanjuti(u.nomorUnit)}
+                          className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
+                        >
+                          Tindak Lanjuti →
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -333,7 +345,7 @@ function Evaluasi() {
   const [filterPerusahaan, setFilterPerusahaan] = useState("Semua")
   const [filterJenisSpip, setFilterJenisSpip] = useState("Semua")
   const [bulanTerpilih, setBulanTerpilih] = useState("Semua")
-  const [itemDitutupManual, setItemDitutupManual] = useState(() => new Set())
+  const [kriteriaAktif, setKriteriaAktif] = useState(null)
 
   const [pengaturanPerusahaan, setPengaturanPerusahaan] = useState({
     prosedurPengujianKelayakan: false,
@@ -396,15 +408,6 @@ function Evaluasi() {
     } finally {
       setSedangSimpanPengaturan(null)
     }
-  }
-
-  function toggleItemTerbuka(index) {
-    setItemDitutupManual((sebelumnya) => {
-      const baru = new Set(sebelumnya)
-      if (baru.has(index)) baru.delete(index)
-      else baru.add(index)
-      return baru
-    })
   }
 
   // Daftar nama perusahaan diambil dari SELURUH data (tidak ikut kefilter Kategori SPIP/Bulan),
@@ -530,13 +533,13 @@ function Evaluasi() {
       {
         teks: "Daftar sarana, prasarana, instalasi, dan peralatan pertambangan sudah dibuat",
         terpenuhi: totalData > 0,
-        keterangan: `${totalData} unit terdaftar (sesuai filter aktif)`,
+        keterangan: `${totalData} unit terdaftar`,
         unitBermasalah: [],
       },
       {
         teks: "Pelaksanaan pengujian dan pemantauan sesuai jadwal yang ditetapkan (tidak ada yang lewat jatuh tempo)",
         terpenuhi: totalData > 0 && unitLewatTempo.length === 0,
-        keterangan: unitLewatTempo.length === 0 ? "Semua unit masih dalam jadwal" : `${unitLewatTempo.length} unit sudah lewat jatuh tempo`,
+        keterangan: unitLewatTempo.length === 0 ? "Semua unit masih dalam jadwal" : `${unitLewatTempo.length} unit lewat jatuh tempo`,
         unitBermasalah: unitLewatTempo.map((u) => ({
           namaUnit: u.namaUnit,
           nomorUnit: u.nomorUnit,
@@ -547,8 +550,8 @@ function Evaluasi() {
         teks: "Pengujian dan pemantauan dilakukan oleh Tenaga Teknis Pertambangan yang Berkompeten",
         terpenuhi: totalData > 0 && unitPetugasKompeten === totalData,
         keterangan: unitDenganPetugasTercatat === 0
-          ? "Belum ada unit yang mencatat nama & status kompetensi petugas"
-          : `${unitPetugasKompeten} dari ${totalData} unit tercatat diperiksa petugas berkompeten (${unitDenganPetugasTercatat} unit sudah mencatat data petugas)`,
+          ? "Belum ada petugas tercatat"
+          : `${unitPetugasKompeten} dari ${totalData} unit kompeten`,
         unitBermasalah: unitPetugasBelumKompeten.map((u) => ({
           namaUnit: u.namaUnit,
           nomorUnit: u.nomorUnit,
@@ -561,8 +564,8 @@ function Evaluasi() {
         teks: "Seluruh tindak lanjut dan perbaikan atas temuan sudah dilaksanakan",
         terpenuhi: unitBermasalahBelumTindakLanjut.length === 0,
         keterangan: unitBermasalahBelumTindakLanjut.length === 0
-          ? "Tidak ada unit bermasalah yang belum ditindaklanjuti"
-          : `${unitBermasalahBelumTindakLanjut.length} unit bermasalah belum ada catatan tindak lanjut`,
+          ? "Tidak ada temuan tertunda"
+          : `${unitBermasalahBelumTindakLanjut.length} unit belum ditindaklanjuti`,
         unitBermasalah: unitBermasalahBelumTindakLanjut.map((u) => ({
           namaUnit: u.namaUnit,
           nomorUnit: u.nomorUnit,
@@ -571,6 +574,19 @@ function Evaluasi() {
       },
     ]
   }, [dataDasarTerfilter])
+
+  // Default: buka otomatis panel detail untuk kriteria BERMASALAH pertama saat data pertama kali termuat,
+  // supaya masalah tetap langsung kelihatan tanpa harus klik dulu. Setelah itu terserah pilihan user.
+  useEffect(() => {
+    if (kriteriaAktif === null && checklistOtomatis.length > 0) {
+      const idx = checklistOtomatis.findIndex((it) => it.unitBermasalah.length > 0)
+      if (idx !== -1) setKriteriaAktif(idx)
+    }
+  }, [checklistOtomatis, kriteriaAktif])
+
+  function pilihKriteria(index) {
+    setKriteriaAktif((sebelumnya) => (sebelumnya === index ? -1 : index))
+  }
 
   const detailEvaluasiPerUnit = useMemo(() => {
     return dataDasarTerfilter
@@ -609,6 +625,8 @@ function Evaluasi() {
     { label: "Mendekati Jatuh Tempo", nilai: kepatuhan.mendekati, satuan: "", sub: null, icon: AlertTriangle, warna: "text-yellow-600 dark:text-yellow-400", aksen: "from-yellow-400 to-amber-600", bgIkon: "bg-gradient-to-br from-yellow-400 to-amber-600" },
     { label: "Sudah Lewat", nilai: kepatuhan.lewat, satuan: "", sub: null, icon: XCircle, warna: "text-red-600 dark:text-red-400", aksen: "from-red-400 to-rose-600", bgIkon: "bg-gradient-to-br from-red-400 to-rose-600" },
   ]
+
+  const itemAktif = kriteriaAktif !== null && kriteriaAktif >= 0 ? checklistOtomatis[kriteriaAktif] : null
 
   return (
     <div>
@@ -884,41 +902,36 @@ function Evaluasi() {
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Checklist Kepatuhan Regulasi</h2>
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-              Berdasarkan kriteria penilaian Kepmen ESDM soal kelayakan sarana/prasarana/instalasi/peralatan dan pengelolaan Keselamatan Operasi Pertambangan. Item yang belum terpenuhi otomatis menampilkan daftar unit yang perlu ditindaklanjuti.
+              Klik kartu bertanda ✗ untuk melihat unit mana saja yang belum memenuhi kriteria itu.
             </p>
 
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Dihitung otomatis dari data</p>
-            <div className="flex flex-col gap-2 mb-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
               {checklistOtomatis.map((item, i) => (
-                <ItemChecklistOtomatis
+                <KartuKriteriaOtomatis
                   key={i}
                   item={item}
-                  terbuka={!item.terpenuhi && !itemDitutupManual.has(i)}
-                  onToggle={() => toggleItemTerbuka(i)}
+                  labelSingkat={DAFTAR_KRITERIA[i].labelSingkat}
+                  aktif={kriteriaAktif === i}
+                  onPilih={() => pilihKriteria(i)}
                 />
               ))}
-            </div>
-
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Pengaturan Tingkat Perusahaan</p>
-            <div className="flex flex-col gap-2">
-              <ItemPengaturan
+              <KartuPengaturan
                 teks="Prosedur pengujian kelayakan sarana, prasarana, instalasi, dan peralatan sudah disusun dan ditetapkan"
+                labelSingkat="Prosedur Uji"
                 terpenuhi={pengaturanPerusahaan.prosedurPengujianKelayakan}
                 sedangSimpan={sedangSimpanPengaturan === "prosedurPengujianKelayakan"}
                 onToggle={() => ubahPengaturan("prosedurPengujianKelayakan")}
               />
-              <ItemPengaturan
+              <KartuPengaturan
                 teks="Prosedur pemantauan, pengukuran kinerja, evaluasi, dan tindak lanjut pengelolaan Keselamatan Operasi Pertambangan sudah ada"
+                labelSingkat="Prosedur Pantau"
                 terpenuhi={pengaturanPerusahaan.prosedurPemantauanEvaluasi}
                 sedangSimpan={sedangSimpanPengaturan === "prosedurPemantauanEvaluasi"}
                 onToggle={() => ubahPengaturan("prosedurPemantauanEvaluasi")}
               />
             </div>
 
-            <div className="flex items-start gap-2 mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs">
-              <Info size={14} className="flex-shrink-0 mt-0.5" />
-              <p>Kedua item di atas berlaku untuk seluruh perusahaan (bukan per unit). Klik item untuk menandai sudah/belum ditetapkan.</p>
-            </div>
+            <PanelDetailKriteria item={itemAktif} onTindakLanjuti={tindakLanjutiUnit} />
           </motion.div>
 
           {/* === Detail Evaluasi per Unit === */}
