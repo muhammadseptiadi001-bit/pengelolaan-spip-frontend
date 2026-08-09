@@ -28,18 +28,23 @@ function labelBulan(kunci) {
 
 // ===== SUMBER TUNGGAL PERHITUNGAN EVALUASI PER UNIT =====
 // Dipakai baik untuk kartu ringkasan "Tingkat Kepatuhan" MAUPUN tabel "Detail Evaluasi per Unit",
-// supaya kedua tempat itu SELALU menampilkan angka yang sinkron (sebelumnya dua rumus berbeda
-// dipakai terpisah, sehingga persentasenya bisa berbeda untuk unit yang sama).
+// supaya kedua tempat itu SELALU menampilkan angka yang sinkron.
 //
-// 6 kriteria yang dinilai:
-//  1. daftarOk            -> selalu true (unit ini memang sudah terdaftar)
-//  2. jadwalOk             -> status waktu bukan "Sudah Lewat"
-//  3. petugasOk            -> statusKompetensi === "Bersertifikat / Kompeten"
-//  4. tindakLanjutOk       -> tidak ada temuan bermasalah (Tidak Layak / Layak Dengan Catatan)
-//                             yang belum diisi kolom Tindak Lanjut
-//  5. prosedurPengujianOk  -> Pengaturan Tingkat Perusahaan: prosedur pengujian kelayakan
-//  6. prosedurPemantauanOk -> Pengaturan Tingkat Perusahaan: prosedur pemantauan & evaluasi
-// persentase = (jumlah kriteria terpenuhi / 6) x 100%
+// 7 kriteria yang dinilai:
+//  1. daftarOk             -> selalu true (unit ini memang sudah terdaftar)
+//  2. jadwalOk              -> status waktu bukan "Sudah Lewat"
+//  3. petugasOk             -> statusKompetensi === "Bersertifikat / Kompeten"
+//  4. tindakLanjutOk        -> tidak ada temuan bermasalah (Tidak Layak / Layak Dengan Catatan)
+//                              yang belum diisi kolom Tindak Lanjut
+//  5. statusKelayakanOk     -> statusKelayakan PERSIS "Layak" (tanpa catatan). "Layak Dengan
+//                              Catatan" TETAP dianggap belum sepenuhnya patuh walau tindak
+//                              lanjutnya sudah diisi — karena "catatan" itu sendiri berarti
+//                              belum sempurna. Ini kriteria terpisah dari tindakLanjutOk supaya
+//                              "sudah ditindaklanjuti" dan "sudah benar-benar Layak" tidak
+//                              tertukar jadi satu hal.
+//  6. prosedurPengujianOk   -> Pengaturan Tingkat Perusahaan: prosedur pengujian kelayakan
+//  7. prosedurPemantauanOk  -> Pengaturan Tingkat Perusahaan: prosedur pemantauan & evaluasi
+// persentase = (jumlah kriteria terpenuhi / 7) x 100%
 function hitungEvaluasiUnit(u, pengaturanPerusahaan) {
   const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
   const statusWaktu = hitungStatusWaktu(jatuhTempo).label
@@ -50,16 +55,17 @@ function hitungEvaluasiUnit(u, pengaturanPerusahaan) {
   const tindakLanjutOk = !(
     (u.statusKelayakan === "Tidak Layak" || u.statusKelayakan === "Layak Dengan Catatan") && !u.tindakLanjut
   )
+  const statusKelayakanOk = u.statusKelayakan === "Layak"
   const prosedurPengujianOk = pengaturanPerusahaan.prosedurPengujianKelayakan
   const prosedurPemantauanOk = pengaturanPerusahaan.prosedurPemantauanEvaluasi
 
-  const kriteria = [daftarOk, jadwalOk, petugasOk, tindakLanjutOk, prosedurPengujianOk, prosedurPemantauanOk]
+  const kriteria = [daftarOk, jadwalOk, petugasOk, tindakLanjutOk, statusKelayakanOk, prosedurPengujianOk, prosedurPemantauanOk]
   const jumlahTerpenuhi = kriteria.filter(Boolean).length
   const persentase = Math.round((jumlahTerpenuhi / kriteria.length) * 100)
 
   return {
     jatuhTempo, statusWaktu,
-    daftarOk, jadwalOk, petugasOk, tindakLanjutOk, prosedurPengujianOk, prosedurPemantauanOk,
+    daftarOk, jadwalOk, petugasOk, tindakLanjutOk, statusKelayakanOk, prosedurPengujianOk, prosedurPemantauanOk,
     persentase,
   }
 }
@@ -408,12 +414,12 @@ function Evaluasi() {
 
   // Kartu ringkasan "Tingkat Kepatuhan" memakai hitungEvaluasiUnit() yang SAMA PERSIS dengan
   // yang dipakai tabel "Detail Evaluasi per Unit" di bawah — persentase-nya adalah rata-rata
-  // dari persentase per unit (6 kriteria), jadi kalau "Bulan Uji Terakhir" = Semua Waktu,
+  // dari persentase per unit (7 kriteria), jadi kalau "Bulan Uji Terakhir" = Semua Waktu,
   // angka di kartu dan di tabel akan selalu sinkron untuk unit yang sama.
   const kepatuhan = useMemo(() => {
     let aman = 0, mendekati = 0, lewat = 0
     let totalPersentase = 0
-    let jumlahJadwalOk = 0, jumlahPetugasOk = 0, jumlahTindakLanjutOk = 0
+    let jumlahJadwalOk = 0, jumlahPetugasOk = 0, jumlahTindakLanjutOk = 0, jumlahStatusKelayakanOk = 0
 
     dataUnitTerfilter.forEach((u) => {
       const evalUnit = hitungEvaluasiUnit(u, pengaturanPerusahaan)
@@ -425,6 +431,7 @@ function Evaluasi() {
       if (evalUnit.jadwalOk) jumlahJadwalOk++
       if (evalUnit.petugasOk) jumlahPetugasOk++
       if (evalUnit.tindakLanjutOk) jumlahTindakLanjutOk++
+      if (evalUnit.statusKelayakanOk) jumlahStatusKelayakanOk++
 
       totalPersentase += evalUnit.persentase
     })
@@ -434,10 +441,11 @@ function Evaluasi() {
     const persentaseJadwal = total === 0 ? 0 : Math.round((jumlahJadwalOk / total) * 100)
     const persentasePetugas = total === 0 ? 0 : Math.round((jumlahPetugasOk / total) * 100)
     const persentaseTindakLanjut = total === 0 ? 0 : Math.round((jumlahTindakLanjutOk / total) * 100)
+    const persentaseStatusKelayakan = total === 0 ? 0 : Math.round((jumlahStatusKelayakanOk / total) * 100)
 
     return {
       aman, mendekati, lewat, total, persentase,
-      persentaseJadwal, persentasePetugas, persentaseTindakLanjut,
+      persentaseJadwal, persentasePetugas, persentaseTindakLanjut, persentaseStatusKelayakan,
     }
   }, [dataUnitTerfilter, pengaturanPerusahaan])
 
@@ -573,11 +581,12 @@ function Evaluasi() {
       label: "Tingkat Kepatuhan",
       nilai: kepatuhan.persentase,
       satuan: "%",
-      sub: "Rata-rata pemenuhan 6 kriteria checklist regulasi per unit",
+      sub: "Rata-rata pemenuhan 7 kriteria checklist regulasi per unit",
       breakdown: [
         { label: "Jadwal", nilai: kepatuhan.persentaseJadwal },
         { label: "Petugas", nilai: kepatuhan.persentasePetugas },
         { label: "Tindak Lanjut", nilai: kepatuhan.persentaseTindakLanjut },
+        { label: "Layak Penuh", nilai: kepatuhan.persentaseStatusKelayakan },
       ],
       icon: ShieldCheck, warna: "text-blue-600 dark:text-blue-400", aksen: "from-blue-400 to-blue-600", bgIkon: "bg-gradient-to-br from-blue-400 to-blue-600"
     },
@@ -920,6 +929,7 @@ function Evaluasi() {
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Pelaksanaan Pengujian dan Pemantauan Sesuai Jadwal yang Ditetapkan</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Pengujian dan Pemantauan Dilakukan oleh Tenaga Teknis Pertambangan yang Berkompeten</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Seluruh Tindak Lanjut dan Perbaikan atas Temuan Sudah Dilaksanakan</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Status Kelayakan Layak Penuh (Tanpa Catatan)</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Prosedur Pengujian Kelayakan Sarana, Prasarana, Instalasi, dan Peralatan Sudah Disusun dan Ditetapkan</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center min-w-[120px]">Prosedur Pemantauan, Pengukuran Kinerja, Evaluasi, dan Tindak Lanjut Pengelolaan Keselamatan Operasi Pertambangan Sudah Ada</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Status Kelayakan</th>
@@ -936,6 +946,7 @@ function Evaluasi() {
                         <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.jadwalOk} /></td>
                         <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.petugasOk} /></td>
                         <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.tindakLanjutOk} /></td>
+                        <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.statusKelayakanOk} /></td>
                         <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.prosedurPengujianOk} /></td>
                         <td className="py-2.5 px-3"><TandaKriteria terpenuhi={u.prosedurPemantauanOk} /></td>
                         <td className="py-2.5 px-3 whitespace-nowrap">
