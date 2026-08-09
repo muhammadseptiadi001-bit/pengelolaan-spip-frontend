@@ -54,10 +54,23 @@ const GRUP_ASPEK1 = {
   ],
 }
 
-const ASPEK_PLACEHOLDER = [
-  { key: "aspek2", label: "Aspek 2 — Pengamanan Instalasi", icon: ShieldAlert },
-  { key: "aspek4", label: "Aspek 4 — Kompetensi Tenaga Teknik", icon: UserCog },
-  { key: "aspek5", label: "Aspek 5 — Evaluasi Kajian Teknis", icon: FileSearch },
+const ASPEK2_PLACEHOLDER = { key: "aspek2", label: "Aspek 2 — Pengamanan Instalasi", icon: ShieldAlert }
+const ASPEK4_PLACEHOLDER = { key: "aspek4", label: "Aspek 4 — Kompetensi Tenaga Teknik", icon: UserCog }
+const ASPEK5_PLACEHOLDER = { key: "aspek5", label: "Aspek 5 — Evaluasi Kajian Teknis", icon: FileSearch }
+
+// Dipakai untuk sheet "Menu Lainnya" di mobile — daftar flat 3 placeholder yang belum dikerjakan.
+const ASPEK_PLACEHOLDER = [ASPEK2_PLACEHOLDER, ASPEK4_PLACEHOLDER, ASPEK5_PLACEHOLDER]
+
+// Urutan render untuk sidebar desktop, DIURUTKAN SESUAI NOMOR ASPEK (1 → 2 → 3 → 4 → 5),
+// bukan berdasarkan urutan definisi di atas. Ini yang menentukan urutan tampil di layar,
+// jadi kalau nanti Aspek 2/4/5 mulai dikerjakan dan diganti jadi grup menu asli, cukup
+// ganti entrinya di sini tanpa mengubah urutan.
+const URUTAN_ASPEK_DESKTOP = [
+  { tipe: "grup", data: GRUP_ASPEK1 },
+  { tipe: "placeholder", data: ASPEK2_PLACEHOLDER },
+  { tipe: "grup", data: GRUP_ASPEK3 },
+  { tipe: "placeholder", data: ASPEK4_PLACEHOLDER },
+  { tipe: "placeholder", data: ASPEK5_PLACEHOLDER },
 ]
 
 // Item cepat untuk bottom nav mobile (dipilih manual, bukan diturunkan dari struktur di atas,
@@ -202,12 +215,19 @@ function Sidebar() {
 
           <div className="h-px bg-gray-200 dark:bg-gray-800 my-2"></div>
 
-          <GrupMenuDesktop grup={GRUP_ASPEK3} terbuka={grupTerbuka.aspek3} onToggle={() => toggleGrup("aspek3")} pathname={location.pathname} />
-          <GrupMenuDesktop grup={GRUP_ASPEK1} terbuka={grupTerbuka.aspek1} onToggle={() => toggleGrup("aspek1")} pathname={location.pathname} />
-
-          {ASPEK_PLACEHOLDER.map((aspek) => (
-            <GrupPlaceholder key={aspek.key} label={aspek.label} icon={aspek.icon} />
-          ))}
+          {URUTAN_ASPEK_DESKTOP.map((entri) =>
+            entri.tipe === "grup" ? (
+              <GrupMenuDesktop
+                key={entri.data.key}
+                grup={entri.data}
+                terbuka={grupTerbuka[entri.data.key]}
+                onToggle={() => toggleGrup(entri.data.key)}
+                pathname={location.pathname}
+              />
+            ) : (
+              <GrupPlaceholder key={entri.data.key} label={entri.data.label} icon={entri.data.icon} />
+            )
+          )}
         </nav>
 
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
