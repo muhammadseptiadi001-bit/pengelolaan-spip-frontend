@@ -194,7 +194,7 @@ function LabelKelompokSection({ children }) {
   )
 }
 
-// ===== CHECKLIST KEPATUHAN REGULASI — VERSI RINGKAS (GRID KARTU KECIL) =====
+// ===== EVALUASI KRITERIA KEPATUHAN — VERSI RINGKAS (GRID KARTU KECIL) =====
 // Sebelumnya tiap item checklist adalah baris penuh lebar dengan expand sendiri-sendiri,
 // jadi section ini jadi sangat panjang dan mendorong tabel "Detail Evaluasi per Unit" ke bawah.
 // Sekarang: 4 item otomatis + 2 item pengaturan perusahaan ditampilkan sebagai kartu kecil
@@ -899,7 +899,7 @@ function Evaluasi() {
           >
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck size={18} className="text-blue-500" />
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Checklist Kepatuhan Regulasi</h2>
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Evaluasi Kriteria Kepatuhan</h2>
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
               Klik kartu bertanda ✗ untuk melihat unit mana saja yang belum memenuhi kriteria itu.
