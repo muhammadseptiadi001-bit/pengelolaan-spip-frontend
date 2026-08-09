@@ -26,6 +26,44 @@ function labelBulan(kunci) {
   return `${NAMA_BULAN[Number(bulan) - 1]} ${tahun}`
 }
 
+// ===== SUMBER TUNGGAL PERHITUNGAN EVALUASI PER UNIT =====
+// Dipakai baik untuk kartu ringkasan "Tingkat Kepatuhan" MAUPUN tabel "Detail Evaluasi per Unit",
+// supaya kedua tempat itu SELALU menampilkan angka yang sinkron (sebelumnya dua rumus berbeda
+// dipakai terpisah, sehingga persentasenya bisa berbeda untuk unit yang sama).
+//
+// 6 kriteria yang dinilai:
+//  1. daftarOk            -> selalu true (unit ini memang sudah terdaftar)
+//  2. jadwalOk             -> status waktu bukan "Sudah Lewat"
+//  3. petugasOk            -> statusKompetensi === "Bersertifikat / Kompeten"
+//  4. tindakLanjutOk       -> tidak ada temuan bermasalah (Tidak Layak / Layak Dengan Catatan)
+//                             yang belum diisi kolom Tindak Lanjut
+//  5. prosedurPengujianOk  -> Pengaturan Tingkat Perusahaan: prosedur pengujian kelayakan
+//  6. prosedurPemantauanOk -> Pengaturan Tingkat Perusahaan: prosedur pemantauan & evaluasi
+// persentase = (jumlah kriteria terpenuhi / 6) x 100%
+function hitungEvaluasiUnit(u, pengaturanPerusahaan) {
+  const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
+  const statusWaktu = hitungStatusWaktu(jatuhTempo).label
+
+  const daftarOk = true
+  const jadwalOk = statusWaktu !== "Sudah Lewat"
+  const petugasOk = u.statusKompetensi === "Bersertifikat / Kompeten"
+  const tindakLanjutOk = !(
+    (u.statusKelayakan === "Tidak Layak" || u.statusKelayakan === "Layak Dengan Catatan") && !u.tindakLanjut
+  )
+  const prosedurPengujianOk = pengaturanPerusahaan.prosedurPengujianKelayakan
+  const prosedurPemantauanOk = pengaturanPerusahaan.prosedurPemantauanEvaluasi
+
+  const kriteria = [daftarOk, jadwalOk, petugasOk, tindakLanjutOk, prosedurPengujianOk, prosedurPemantauanOk]
+  const jumlahTerpenuhi = kriteria.filter(Boolean).length
+  const persentase = Math.round((jumlahTerpenuhi / kriteria.length) * 100)
+
+  return {
+    jatuhTempo, statusWaktu,
+    daftarOk, jadwalOk, petugasOk, tindakLanjutOk, prosedurPengujianOk, prosedurPemantauanOk,
+    persentase,
+  }
+}
+
 // ===== KOMPONEN BERGAYA SAMA DENGAN DASHBOARD =====
 
 function AngkaCountUp({ nilai, durasi = 800 }) {
@@ -98,20 +136,19 @@ function TooltipModernBertumpuk({ active, payload, label }) {
   )
 }
 
-// Label angka di dalam tiap segmen bar bertumpuk (Tren Status Kelayakan).
-// Cuma dirender kalau nilainya > 0, supaya segmen kosong (0 unit) tidak menampilkan angka "0"
-// yang mengotori grafik — sama seperti perilaku LabelList biasa di grafik Distribusi Temuan.
+// Label angka di ATAS tiap segmen bar bertumpuk (Tren Status Kelayakan) — DI LUAR batang,
+// bukan di tengah/dalam, supaya gaya labelnya konsisten dengan grafik Distribusi Temuan
+// (yang juga menampilkan angka di luar/samping batangnya). Cuma dirender kalau nilainya > 0.
 function LabelJumlahBarBertumpuk(props) {
-  const { x, y, width, height, value } = props
+  const { x, y, width, value } = props
   if (!value) return null
   return (
     <text
       x={x + width / 2}
-      y={y + height / 2}
-      fill="#fff"
+      y={y - 4}
       textAnchor="middle"
-      dominantBaseline="middle"
       style={{ fontSize: 11, fontWeight: 700 }}
+      className="fill-gray-700 dark:fill-gray-200"
     >
       {value}
     </text>
@@ -369,52 +406,40 @@ function Evaluasi() {
     return dataDasarTerfilter.filter((u) => kunciBulan(u.tanggalUjiTerakhir) === bulanTerpilih)
   }, [dataDasarTerfilter, bulanTerpilih])
 
-  // Tingkat Kepatuhan dihitung dari rata-rata skor 3 kriteria per unit: jadwal, kompetensi
-  // petugas, dan status kelayakan penuh. Skor per unit 0/3 sampai 3/3, lalu dirata-rata
-  // seluruh unit — jadi progres parsial tetap tercermin (tidak langsung 0% kalau baru 1 kriteria
-  // yang belum terpenuhi).
-  //
-  // Kriteria ketiga (kelayakanOk) SENGAJA hanya bernilai true kalau statusKelayakan === "Layak".
-  // Unit dengan status "Layak Dengan Catatan" TIDAK dihitung 100% patuh di sini, meskipun kolom
-  // Tindak Lanjut-nya sudah diisi — karena status "Dengan Catatan" berarti masih ada yang perlu
-  // dituntaskan sebelum benar-benar dinyatakan layak penuh. Ini beda dengan checklist "Seluruh
-  // tindak lanjut sudah dilaksanakan" di bawah, yang cuma mengecek apakah kolom tindak lanjut
-  // sudah diisi atau belum (dua hal itu sengaja dipisah, jangan digabung lagi).
+  // Kartu ringkasan "Tingkat Kepatuhan" memakai hitungEvaluasiUnit() yang SAMA PERSIS dengan
+  // yang dipakai tabel "Detail Evaluasi per Unit" di bawah — persentase-nya adalah rata-rata
+  // dari persentase per unit (6 kriteria), jadi kalau "Bulan Uji Terakhir" = Semua Waktu,
+  // angka di kartu dan di tabel akan selalu sinkron untuk unit yang sama.
   const kepatuhan = useMemo(() => {
     let aman = 0, mendekati = 0, lewat = 0
-    let totalSkor = 0
-    let jumlahJadwalOk = 0, jumlahPetugasOk = 0, jumlahKelayakanOk = 0
+    let totalPersentase = 0
+    let jumlahJadwalOk = 0, jumlahPetugasOk = 0, jumlahTindakLanjutOk = 0
 
     dataUnitTerfilter.forEach((u) => {
-      const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
-      const label = hitungStatusWaktu(jatuhTempo).label
-      if (label === "Aman") aman++
-      else if (label === "Mendekati Jatuh Tempo") mendekati++
+      const evalUnit = hitungEvaluasiUnit(u, pengaturanPerusahaan)
+
+      if (evalUnit.statusWaktu === "Aman") aman++
+      else if (evalUnit.statusWaktu === "Mendekati Jatuh Tempo") mendekati++
       else lewat++
 
-      const jadwalOk = label !== "Sudah Lewat"
-      const petugasOk = u.statusKompetensi === "Bersertifikat / Kompeten"
-      const kelayakanOk = u.statusKelayakan === "Layak"
+      if (evalUnit.jadwalOk) jumlahJadwalOk++
+      if (evalUnit.petugasOk) jumlahPetugasOk++
+      if (evalUnit.tindakLanjutOk) jumlahTindakLanjutOk++
 
-      if (jadwalOk) jumlahJadwalOk++
-      if (petugasOk) jumlahPetugasOk++
-      if (kelayakanOk) jumlahKelayakanOk++
-
-      const skorUnit = ((jadwalOk ? 1 : 0) + (petugasOk ? 1 : 0) + (kelayakanOk ? 1 : 0)) / 3
-      totalSkor += skorUnit
+      totalPersentase += evalUnit.persentase
     })
 
     const total = dataUnitTerfilter.length
-    const persentase = total === 0 ? 0 : Math.round((totalSkor / total) * 100)
+    const persentase = total === 0 ? 0 : Math.round(totalPersentase / total)
     const persentaseJadwal = total === 0 ? 0 : Math.round((jumlahJadwalOk / total) * 100)
     const persentasePetugas = total === 0 ? 0 : Math.round((jumlahPetugasOk / total) * 100)
-    const persentaseKelayakan = total === 0 ? 0 : Math.round((jumlahKelayakanOk / total) * 100)
+    const persentaseTindakLanjut = total === 0 ? 0 : Math.round((jumlahTindakLanjutOk / total) * 100)
 
     return {
       aman, mendekati, lewat, total, persentase,
-      persentaseJadwal, persentasePetugas, persentaseKelayakan,
+      persentaseJadwal, persentasePetugas, persentaseTindakLanjut,
     }
-  }, [dataUnitTerfilter])
+  }, [dataUnitTerfilter, pengaturanPerusahaan])
 
   // Tren, backlog, distribusi temuan, checklist, dan detail per unit semuanya pakai
   // dataDasarTerfilter (ikut Filter Perusahaan + Kategori SPIP), TAPI TIDAK ikut filter Bulan —
@@ -522,33 +547,18 @@ function Evaluasi() {
   }, [dataDasarTerfilter])
 
   // === Detail Evaluasi per Unit: tiap unit jadi baris, tiap kriteria jadi kolom Ya/Tidak ===
+  // Memakai hitungEvaluasiUnit() yang sama dengan kartu "Tingkat Kepatuhan" — lihat komentar di
+  // atas fungsi itu.
   const detailEvaluasiPerUnit = useMemo(() => {
     return dataDasarTerfilter
       .map((u) => {
-        const jatuhTempo = hitungJatuhTempo(u.tanggalUjiTerakhir, u.jangkaWaktuBulan)
-        const statusWaktu = hitungStatusWaktu(jatuhTempo).label
-
-        const daftarOk = true
-        const jadwalOk = statusWaktu !== "Sudah Lewat"
-        const petugasOk = u.statusKompetensi === "Bersertifikat / Kompeten"
-        const tindakLanjutOk = !(
-          (u.statusKelayakan === "Tidak Layak" || u.statusKelayakan === "Layak Dengan Catatan") && !u.tindakLanjut
-        )
-        const prosedurPengujianOk = pengaturanPerusahaan.prosedurPengujianKelayakan
-        const prosedurPemantauanOk = pengaturanPerusahaan.prosedurPemantauanEvaluasi
-
-        const jumlahTerpenuhi = [daftarOk, jadwalOk, petugasOk, tindakLanjutOk, prosedurPengujianOk, prosedurPemantauanOk]
-          .filter(Boolean).length
-        const persentase = Math.round((jumlahTerpenuhi / 6) * 100)
-
+        const evalUnit = hitungEvaluasiUnit(u, pengaturanPerusahaan)
         return {
           id: u.id,
           namaUnit: u.namaUnit,
           nomorUnit: u.nomorUnit,
-          daftarOk, jadwalOk, petugasOk, tindakLanjutOk, prosedurPengujianOk, prosedurPemantauanOk,
           statusKelayakan: u.statusKelayakan,
-          jatuhTempo,
-          persentase,
+          ...evalUnit,
         }
       })
       .sort((a, b) => a.persentase - b.persentase)
@@ -563,11 +573,11 @@ function Evaluasi() {
       label: "Tingkat Kepatuhan",
       nilai: kepatuhan.persentase,
       satuan: "%",
-      sub: "Rata-rata pemenuhan jadwal, kompetensi petugas & status kelayakan penuh per unit",
+      sub: "Rata-rata pemenuhan 6 kriteria checklist regulasi per unit",
       breakdown: [
         { label: "Jadwal", nilai: kepatuhan.persentaseJadwal },
         { label: "Petugas", nilai: kepatuhan.persentasePetugas },
-        { label: "Kelayakan", nilai: kepatuhan.persentaseKelayakan },
+        { label: "Tindak Lanjut", nilai: kepatuhan.persentaseTindakLanjut },
       ],
       icon: ShieldCheck, warna: "text-blue-600 dark:text-blue-400", aksen: "from-blue-400 to-blue-600", bgIkon: "bg-gradient-to-br from-blue-400 to-blue-600"
     },
@@ -708,8 +718,8 @@ function Evaluasi() {
             {trenStatusKelayakan.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-gray-500">Belum ada data untuk ditampilkan.</p>
             ) : (
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={trenStatusKelayakan} barCategoryGap="25%">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={trenStatusKelayakan} barCategoryGap="25%" margin={{ top: 20 }}>
                   <defs>
                     <linearGradient id="gradLayak" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={WARNA_KELAYAKAN["Layak"]} stopOpacity={1} />
