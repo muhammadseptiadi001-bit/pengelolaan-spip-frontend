@@ -28,14 +28,18 @@ import logoSicool from '../assets/logo-sicool.png'
 // "Input SPIP" berdiri sendiri di luar grup karena sifatnya general — datanya dipakai
 // lintas aspek (jadi pintu masuk untuk Aspek 1, 2, 3). Halaman-halaman yang sudah ada
 // (Dashboard, Data SPIP, Evaluasi, Riwayat) semuanya berputar di sekitar kelayakan,
-// jadi dibungkus sebagai Aspek 3. Aspek 1 (Pemeliharaan) baru mulai dikerjakan.
-// Aspek 2, 4, 5 masih placeholder "Segera Hadir" sampai mulai dikerjakan.
+// jadi dibungkus sebagai grup "Kelayakan SPIP" (dulu disebut Aspek 3). Grup "Sistem &
+// Pelaksanaan Pemeliharaan SPIP" (dulu Aspek 1) baru mulai dikerjakan. Sisanya masih
+// placeholder "Segera Hadir" sampai mulai dikerjakan.
+//
+// Label sengaja TIDAK memakai awalan "Aspek X —" lagi — pakai nama tugasnya langsung
+// (mengikuti istilah di diagram tugas Kepala Teknik Tambang) supaya lebih informatif.
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 
-const GRUP_ASPEK3 = {
+const GRUP_KELAYAKAN = {
   key: "aspek3",
-  label: "Aspek 3 — Kelayakan",
+  label: "Kelayakan SPIP",
   icon: ShieldCheck,
   items: [
     { path: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -45,32 +49,33 @@ const GRUP_ASPEK3 = {
   ],
 }
 
-const GRUP_ASPEK1 = {
+const GRUP_PEMELIHARAAN = {
   key: "aspek1",
-  label: "Aspek 1 — Pemeliharaan",
+  label: "Sistem & Pelaksanaan Pemeliharaan SPIP",
   icon: Wrench,
   items: [
     { path: "/pemeliharaan", label: "Pemeliharaan", icon: Wrench },
   ],
 }
 
-const ASPEK2_PLACEHOLDER = { key: "aspek2", label: "Aspek 2 — Pengamanan Instalasi", icon: ShieldAlert }
-const ASPEK4_PLACEHOLDER = { key: "aspek4", label: "Aspek 4 — Kompetensi Tenaga Teknik", icon: UserCog }
-const ASPEK5_PLACEHOLDER = { key: "aspek5", label: "Aspek 5 — Evaluasi Kajian Teknis", icon: FileSearch }
+const PLACEHOLDER_PENGAMANAN = { key: "aspek2", label: "Pengamanan Instalasi", icon: ShieldAlert }
+const PLACEHOLDER_KOMPETENSI = { key: "aspek4", label: "Kompetensi Tenaga Teknik", icon: UserCog }
+const PLACEHOLDER_EVALUASI_KAJIAN = { key: "aspek5", label: "Evaluasi Laporan Hasil Kajian Teknis", icon: FileSearch }
 
 // Dipakai untuk sheet "Menu Lainnya" di mobile — daftar flat 3 placeholder yang belum dikerjakan.
-const ASPEK_PLACEHOLDER = [ASPEK2_PLACEHOLDER, ASPEK4_PLACEHOLDER, ASPEK5_PLACEHOLDER]
+const ASPEK_PLACEHOLDER = [PLACEHOLDER_PENGAMANAN, PLACEHOLDER_KOMPETENSI, PLACEHOLDER_EVALUASI_KAJIAN]
 
-// Urutan render untuk sidebar desktop, DIURUTKAN SESUAI NOMOR ASPEK (1 → 2 → 3 → 4 → 5),
+// Urutan render untuk sidebar desktop, DIURUTKAN SESUAI URUTAN TUGAS 1 → 5 di diagram,
 // bukan berdasarkan urutan definisi di atas. Ini yang menentukan urutan tampil di layar,
-// jadi kalau nanti Aspek 2/4/5 mulai dikerjakan dan diganti jadi grup menu asli, cukup
-// ganti entrinya di sini tanpa mengubah urutan.
+// jadi kalau nanti Pengamanan Instalasi / Kompetensi Tenaga Teknik / Evaluasi Kajian
+// mulai dikerjakan dan diganti jadi grup menu asli, cukup ganti entrinya di sini tanpa
+// mengubah urutan.
 const URUTAN_ASPEK_DESKTOP = [
-  { tipe: "grup", data: GRUP_ASPEK1 },
-  { tipe: "placeholder", data: ASPEK2_PLACEHOLDER },
-  { tipe: "grup", data: GRUP_ASPEK3 },
-  { tipe: "placeholder", data: ASPEK4_PLACEHOLDER },
-  { tipe: "placeholder", data: ASPEK5_PLACEHOLDER },
+  { tipe: "grup", data: GRUP_PEMELIHARAAN },
+  { tipe: "placeholder", data: PLACEHOLDER_PENGAMANAN },
+  { tipe: "grup", data: GRUP_KELAYAKAN },
+  { tipe: "placeholder", data: PLACEHOLDER_KOMPETENSI },
+  { tipe: "placeholder", data: PLACEHOLDER_EVALUASI_KAJIAN },
 ]
 
 // Item cepat untuk bottom nav mobile (dipilih manual, bukan diturunkan dari struktur di atas,
@@ -99,11 +104,11 @@ function GrupMenuDesktop({ grup, terbuka, onToggle, pathname }) {
           adaAktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
         }`}
       >
-        <span className="flex items-center gap-2">
-          <Icon size={16} />
+        <span className="flex items-center gap-2 text-left">
+          <Icon size={16} className="flex-shrink-0" />
           {grup.label}
         </span>
-        <ChevronDown size={14} className={`transition-transform ${terbuka ? "rotate-180" : ""}`} />
+        <ChevronDown size={14} className={`flex-shrink-0 transition-transform ${terbuka ? "rotate-180" : ""}`} />
       </button>
 
       <AnimatePresence initial={false}>
@@ -150,11 +155,11 @@ function GrupPlaceholder({ label, icon: Icon }) {
       title="Belum tersedia"
       className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-gray-350 dark:text-gray-600 opacity-60 cursor-not-allowed select-none"
     >
-      <span className="flex items-center gap-2">
-        <Icon size={16} />
+      <span className="flex items-center gap-2 text-left">
+        <Icon size={16} className="flex-shrink-0" />
         {label}
       </span>
-      <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 whitespace-nowrap">
+      <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 whitespace-nowrap flex-shrink-0">
         Segera Hadir
       </span>
     </div>
@@ -327,8 +332,8 @@ function Sidebar() {
                 </button>
               </div>
 
-              <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 px-1 mb-1.5">Aspek 3 — Kelayakan</p>
-              {GRUP_ASPEK3.items.filter((it) => it.path !== "/" && it.path !== "/data").map((item) => {
+              <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 px-1 mb-1.5">Kelayakan SPIP</p>
+              {GRUP_KELAYAKAN.items.filter((it) => it.path !== "/" && it.path !== "/data").map((item) => {
                 const Icon = item.icon
                 return (
                   <NavLink
