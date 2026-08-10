@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   FileSearch, CheckCircle2, AlertTriangle, XCircle, Circle, PackagePlus, Trash2,
-  CalendarDays, UserCheck, ClipboardList, ImagePlus, Loader2, FileText, Send
+  CalendarDays, UserCheck, ClipboardList, ImagePlus, Loader2, FileText, Send, Building2, X, Plus
 } from 'lucide-react'
 import { API_URL, UPLOAD_URL, formatTanggal } from '../utils/spipHelpers'
 import { apiFetch } from '../utils/apiFetch'
@@ -16,6 +16,12 @@ const JENIS_KAJIAN_AWAL = "Awal/Sebelum Kegiatan Pertambangan"
 const JENIS_KAJIAN_PERUBAHAN = "Perubahan/Modifikasi Proses, Sarana, Prasarana, Instalasi, atau Peralatan"
 const PILIHAN_JENIS_KAJIAN = [JENIS_KAJIAN_AWAL, JENIS_KAJIAN_PERUBAHAN]
 const PILIHAN_STATUS_KEMEMADAIAN = ["Belum Direview", "Memadai", "Tidak Memadai"]
+
+// Sama dengan daftar departemen di KompetensiTeknik.jsx, supaya istilahnya konsisten
+// di seluruh aplikasi. Kalau perlu diubah, cukup edit array ini di kedua file.
+const PILIHAN_DEPARTEMEN = [
+  "Produksi", "Perawatan/Maintenance", "K3 & Lingkungan", "Teknik & Perencanaan", "Logistik", "Administrasi", "Lainnya"
+]
 
 function tanggalHariIni() {
   const sekarang = new Date()
@@ -94,10 +100,17 @@ function KajianTeknis() {
   const [pengaturan, setPengaturan] = useState({ prosedurEvaluasiKajianTeknis: false })
   const [sedangSimpanPengaturan, setSedangSimpanPengaturan] = useState(false)
 
+  const [namaPerusahaan, setNamaPerusahaan] = useState("")
+  const [departemen, setDepartemen] = useState(PILIHAN_DEPARTEMEN[0])
   const [judulKajian, setJudulKajian] = useState("")
   const [jenisKajian, setJenisKajian] = useState(PILIHAN_JENIS_KAJIAN[0])
   const [keteranganPerubahan, setKeteranganPerubahan] = useState("")
-  const [penyusun, setPenyusun] = useState("")
+
+  // Penyusun/Konsultan sekarang bisa lebih dari satu orang — daftarPenyusun menyimpan
+  // nama-nama yang sudah "ditambahkan" sebagai chip, inputPenyusun cuma teks yang lagi diketik.
+  const [daftarPenyusun, setDaftarPenyusun] = useState([])
+  const [inputPenyusun, setInputPenyusun] = useState("")
+
   const [tanggalKajian, setTanggalKajian] = useState("")
   const [fileLaporan, setFileLaporan] = useState(null)
   const [namaFile, setNamaFile] = useState("")
@@ -187,9 +200,31 @@ function KajianTeknis() {
     }
   }
 
+  function tambahPenyusun() {
+    const nama = inputPenyusun.trim()
+    if (!nama) return
+    if (daftarPenyusun.includes(nama)) {
+      setInputPenyusun("")
+      return
+    }
+    setDaftarPenyusun((prev) => [...prev, nama])
+    setInputPenyusun("")
+  }
+
+  function hapusPenyusun(nama) {
+    setDaftarPenyusun((prev) => prev.filter((n) => n !== nama))
+  }
+
+  function handleKeyDownPenyusun(e) {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      tambahPenyusun()
+    }
+  }
+
   async function tambahKajian() {
-    if (!judulKajian || !jenisKajian || !tanggalKajian) {
-      tampilkanToast("Judul Kajian, Jenis Kajian, dan Tanggal Kajian wajib diisi!", "gagal")
+    if (!namaPerusahaan || !judulKajian || !jenisKajian || !tanggalKajian) {
+      tampilkanToast("Nama Perusahaan, Judul Kajian, Jenis Kajian, dan Tanggal Kajian wajib diisi!", "gagal")
       return
     }
     if (tanggalKajian > tanggalHariIni()) {
@@ -201,15 +236,22 @@ function KajianTeknis() {
       return
     }
 
+    // Kalau masih ada nama yang diketik di kolom tapi belum diklik "Tambah",
+    // ikutkan juga supaya tidak hilang begitu saja saat disimpan.
+    const semuaPenyusun = inputPenyusun.trim()
+      ? [...daftarPenyusun, inputPenyusun.trim()]
+      : daftarPenyusun
+    const penyusunGabungan = semuaPenyusun.join(", ")
+
     setSedangSimpan(true)
     try {
       const res = await apiFetch(KAJIAN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          judulKajian, jenisKajian,
+          namaPerusahaan, departemen, judulKajian, jenisKajian,
           keteranganPerubahan: jenisKajian === JENIS_KAJIAN_PERUBAHAN ? keteranganPerubahan : "",
-          penyusun, tanggalKajian, fileLaporan, statusKememadaian,
+          penyusun: penyusunGabungan, tanggalKajian, fileLaporan, statusKememadaian,
           disampaikanKeKait,
           tanggalPenyampaian: disampaikanKeKait ? (tanggalPenyampaian || null) : null,
           namaPenerima: disampaikanKeKait ? namaPenerima : "",
@@ -219,8 +261,10 @@ function KajianTeknis() {
       if (!res.ok) throw new Error("Gagal menyimpan")
 
       tampilkanToast("Kajian teknis berhasil ditambahkan!", "sukses")
+      setNamaPerusahaan(""); setDepartemen(PILIHAN_DEPARTEMEN[0])
       setJudulKajian(""); setJenisKajian(PILIHAN_JENIS_KAJIAN[0]); setKeteranganPerubahan("")
-      setPenyusun(""); setTanggalKajian(""); setFileLaporan(null); setNamaFile("")
+      setDaftarPenyusun([]); setInputPenyusun("")
+      setTanggalKajian(""); setFileLaporan(null); setNamaFile("")
       setStatusKememadaian(PILIHAN_STATUS_KEMEMADAIAN[0]); setDisampaikanKeKait(false)
       setTanggalPenyampaian(""); setNamaPenerima(""); setCatatanEvaluasi("")
       ambilData()
@@ -311,6 +355,18 @@ function KajianTeknis() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <LabelIkon icon={Building2}>Nama Perusahaan</LabelIkon>
+            <input type="text" placeholder="Nama Perusahaan" value={namaPerusahaan} onChange={(e) => setNamaPerusahaan(e.target.value)} className={inputClass} />
+          </div>
+
+          <div>
+            <LabelIkon icon={Building2}>Departemen</LabelIkon>
+            <select value={departemen} onChange={(e) => setDepartemen(e.target.value)} className={inputClass}>
+              {PILIHAN_DEPARTEMEN.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+
           <div className="md:col-span-2">
             <LabelIkon icon={FileSearch}>Judul Kajian</LabelIkon>
             <input type="text" placeholder="Contoh: Kajian Geoteknik Lereng Tambang Blok A" value={judulKajian} onChange={(e) => setJudulKajian(e.target.value)} className={inputClass} />
@@ -324,8 +380,8 @@ function KajianTeknis() {
           </div>
 
           <div>
-            <LabelIkon icon={UserCheck}>Penyusun / Konsultan</LabelIkon>
-            <input type="text" placeholder="Nama penyusun atau konsultan" value={penyusun} onChange={(e) => setPenyusun(e.target.value)} className={inputClass} />
+            <LabelIkon icon={CalendarDays}>Tanggal Kajian</LabelIkon>
+            <input type="date" value={tanggalKajian} max={tanggalHariIni()} onChange={(e) => setTanggalKajian(e.target.value)} className={inputClass} />
           </div>
 
           {jenisKajian === JENIS_KAJIAN_PERUBAHAN && (
@@ -335,13 +391,48 @@ function KajianTeknis() {
             </div>
           )}
 
-          <div>
-            <LabelIkon icon={CalendarDays}>Tanggal Kajian</LabelIkon>
-            <input type="date" value={tanggalKajian} max={tanggalHariIni()} onChange={(e) => setTanggalKajian(e.target.value)} className={inputClass} />
+          <div className="md:col-span-2">
+            <LabelIkon icon={UserCheck}>Penyusun / Konsultan</LabelIkon>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Ketik nama, lalu klik Tambah (bisa lebih dari satu orang)"
+                value={inputPenyusun}
+                onChange={(e) => setInputPenyusun(e.target.value)}
+                onKeyDown={handleKeyDownPenyusun}
+                className={inputClass}
+              />
+              <button
+                type="button"
+                onClick={tambahPenyusun}
+                className="flex-shrink-0 px-4 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-semibold text-sm flex items-center gap-1.5 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+              >
+                <Plus size={16} /> Tambah
+              </button>
+            </div>
+            {daftarPenyusun.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                {daftarPenyusun.map((namaOrang) => (
+                  <span
+                    key={namaOrang}
+                    className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+                  >
+                    {namaOrang}
+                    <button
+                      type="button"
+                      onClick={() => hapusPenyusun(namaOrang)}
+                      className="p-0.5 rounded-full hover:bg-gray-300 dark:hover:bg-gray-700"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
-            <LabelIkon icon={CheckCircle2}>Status Kememadaian</LabelIkon>
+            <LabelIkon icon={CheckCircle2}>Status</LabelIkon>
             <select value={statusKememadaian} onChange={(e) => setStatusKememadaian(e.target.value)} className={inputClass}>
               {PILIHAN_STATUS_KEMEMADAIAN.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -427,11 +518,13 @@ function KajianTeknis() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800">
+                  <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Perusahaan</th>
+                  <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Departemen</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Judul Kajian</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Jenis Kajian</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tanggal Kajian</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Penyusun</th>
-                  <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Kememadaian</th>
+                  <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Disampaikan ke KaIT</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">File</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Aksi</th>
@@ -440,6 +533,8 @@ function KajianTeknis() {
               <tbody>
                 {daftarTerfilter.map((k) => (
                   <tr key={k.id} className="border-b border-gray-100 dark:border-gray-800/60 text-gray-800 dark:text-gray-200">
+                    <td className="py-2.5 px-3 whitespace-nowrap">{k.namaPerusahaan || "-"}</td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">{k.departemen || "-"}</td>
                     <td className="py-2.5 px-3 font-medium">{k.judulKajian}</td>
                     <td className="py-2.5 px-3 max-w-[220px]">{k.jenisKajian}</td>
                     <td className="py-2.5 px-3 whitespace-nowrap">{formatTanggal(k.tanggalKajian)}</td>
