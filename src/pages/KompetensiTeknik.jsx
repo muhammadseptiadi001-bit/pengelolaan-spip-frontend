@@ -20,7 +20,6 @@ const PILIHAN_JENIS_KOMPETENSI = [
   "Juru Bor",
   "Juru Derek / Crane Operator",
   "Juru Rawat / Paramedis",
-  "Juru Langsir",
   "Petugas Proteksi Radiasi",
   "Ahli Listrik",
   "Petugas/Juru Ventilasi (tambang bawah tanah)",
