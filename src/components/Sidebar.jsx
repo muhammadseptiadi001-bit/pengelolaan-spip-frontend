@@ -27,24 +27,9 @@ import logoSicool from '../assets/logo-sicool.png'
 
 // ===== STRUKTUR MENU BERDASARKAN 5 ASPEK TUGAS & TANGGUNG JAWAB KO =====
 // "Input SPIP" berdiri sendiri di luar grup karena sifatnya general — datanya dipakai
-// lintas aspek (jadi pintu masuk untuk Aspek 1, 2, 3). Halaman-halaman yang sudah ada
-// (Dashboard, Data SPIP, Evaluasi, Riwayat) semuanya berputar di sekitar kelayakan,
-// jadi dibungkus sebagai grup "Kelayakan SPIP" (dulu disebut Aspek 3). Grup "Sistem &
-// Pelaksanaan Pemeliharaan SPIP" (Aspek 1) dan "Pengamanan Instalasi" (Aspek 2) sudah
-// mulai dikerjakan. Sisanya masih placeholder "Segera Hadir" sampai mulai dikerjakan.
-//
-// Field "nomor" = nomor poin regulasi (4.4.1 s/d 4.4.5). Field "labelTab" = label
-// pendek khusus untuk tab bottom nav mobile (label asli terlalu panjang untuk tab).
-//
-// NAVIGASI MOBILE (Opsi A — bottom nav sebagai context switcher aspek):
-// - Bottom nav isinya TAB PER ASPEK yang sudah aktif dikerjakan (Pemeliharaan,
-//   Pengamanan Instalasi, Kelayakan SPIP), bukan lagi shortcut halaman acak.
-// - Tombol "+" bulat navy di tengah, terangkat, khusus untuk Input SPIP.
-// - Tab "Menu" di ujung kanan membuka sheet lengkap (5 poin regulasi + placeholder +
-//   pengaturan), untuk aspek yang belum aktif dikerjakan.
-// - Saat berada di dalam aspek yang punya banyak sub-halaman (Kelayakan SPIP), muncul
-//   strip tab kedua di bawah top bar untuk pindah sub-halaman (Dashboard/Data SPIP/
-//   Evaluasi/Riwayat) tanpa perlu buka sheet Menu.
+// lintas aspek (jadi pintu masuk untuk Aspek 1, 2, 3). Aspek 4 (Kompetensi Tenaga Teknik)
+// datanya BERDIRI SENDIRI, tidak berasal dari Input SPIP, jadi sekarang jadi grup aktif
+// juga (sebelumnya placeholder). Aspek 5 masih placeholder "Segera Hadir".
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 
@@ -84,7 +69,18 @@ const GRUP_PENGAMANAN = {
   ],
 }
 
-const PLACEHOLDER_KOMPETENSI = { key: "aspek4", label: "Kompetensi Tenaga Teknik", icon: UserCog, nomor: "4.4.4" }
+// Aspek 4 — SEKARANG SUDAH AKTIF (sebelumnya placeholder).
+const GRUP_KOMPETENSI = {
+  key: "aspek4",
+  label: "Kompetensi Tenaga Teknik",
+  labelTab: "Kompetensi",
+  icon: UserCog,
+  nomor: "4.4.4",
+  items: [
+    { path: "/kompetensi-teknik", label: "Kompetensi Tenaga Teknik", icon: UserCog },
+  ],
+}
+
 const PLACEHOLDER_EVALUASI_KAJIAN = { key: "aspek5", label: "Evaluasi Laporan Hasil Kajian Teknis", icon: FileSearch, nomor: "4.4.5" }
 
 // Urutan tampil, DIURUTKAN SESUAI URUTAN TUGAS 1 → 5 di diagram. Dipakai untuk render
@@ -93,11 +89,13 @@ const URUTAN_ASPEK_DESKTOP = [
   { tipe: "grup", data: GRUP_PEMELIHARAAN },
   { tipe: "grup", data: GRUP_PENGAMANAN },
   { tipe: "grup", data: GRUP_KELAYAKAN },
-  { tipe: "placeholder", data: PLACEHOLDER_KOMPETENSI },
+  { tipe: "grup", data: GRUP_KOMPETENSI },
   { tipe: "placeholder", data: PLACEHOLDER_EVALUASI_KAJIAN },
 ]
 
-// Aspek yang tampil sebagai TAB di bottom nav mobile (hanya yang sudah aktif dikerjakan).
+// Aspek yang tampil sebagai TAB di bottom nav mobile (dibatasi 3 slot supaya FAB "+" di
+// tengah tetap presisi). Aspek 4 yang baru aktif TIDAK ditambah ke bottom nav — tetap bisa
+// diakses lewat sheet "Menu" di mobile, sama seperti Aspek 1/2/3 lewat sidebar desktop.
 const ASPEK_TAB_MOBILE = [GRUP_PEMELIHARAAN, GRUP_PENGAMANAN, GRUP_KELAYAKAN]
 
 function itemAktif(item, pathname) {
@@ -310,8 +308,8 @@ function Sidebar() {
   const user = ambilUser()
   const [tema, setTemaState] = useState(ambilTema())
   const [menuTerbuka, setMenuTerbuka] = useState(false)
-  const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true, aspek1: true, aspek2: true })
-  const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true, aspek1: false, aspek2: false })
+  const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true, aspek1: true, aspek2: true, aspek4: true })
+  const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true, aspek1: false, aspek2: false, aspek4: false })
 
   function toggleGrup(key) {
     setGrupTerbuka((sebelumnya) => ({ ...sebelumnya, [key]: !sebelumnya[key] }))

@@ -13,6 +13,7 @@ const Riwayat = lazy(() => import('./pages/Riwayat'))
 const Evaluasi = lazy(() => import('./pages/Evaluasi'))
 const Pemeliharaan = lazy(() => import('./pages/Pemeliharaan'))
 const PengamananInstalasi = lazy(() => import('./pages/PengamananInstalasi'))
+const KompetensiTeknik = lazy(() => import('./pages/KompetensiTeknik'))
 
 function LoadingHalaman() {
   return (
@@ -86,6 +87,14 @@ function App() {
             element={
               <Suspense fallback={<LoadingHalaman />}>
                 <PengamananInstalasi />
+              </Suspense>
+            }
+          />
+          <Route
+            path="kompetensi-teknik"
+            element={
+              <Suspense fallback={<LoadingHalaman />}>
+                <KompetensiTeknik />
               </Suspense>
             }
           />
