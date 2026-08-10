@@ -36,7 +36,9 @@ import logoSicool from '../assets/logo-sicool.png'
 // (mengikuti istilah di diagram tugas Kepala Teknik Tambang) supaya lebih informatif.
 //
 // Field "nomor" = nomor poin regulasi (4.4.1 s/d 4.4.5), ditampilkan sebagai kop kecil
-// di atas label tiap grup/placeholder level atas (Opsi A dari diskusi tata letak).
+// di atas label tiap grup/placeholder level atas — dipakai bersama oleh render desktop
+// DAN sheet "Menu Lainnya" di mobile (via URUTAN_ASPEK_DESKTOP), supaya satu sumber
+// struktur dipakai ulang dan tidak gampang tidak sinkron kalau berubah lagi nanti.
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 
@@ -67,14 +69,8 @@ const PLACEHOLDER_PENGAMANAN = { key: "aspek2", label: "Pengamanan Instalasi", i
 const PLACEHOLDER_KOMPETENSI = { key: "aspek4", label: "Kompetensi Tenaga Teknik", icon: UserCog, nomor: "4.4.4" }
 const PLACEHOLDER_EVALUASI_KAJIAN = { key: "aspek5", label: "Evaluasi Laporan Hasil Kajian Teknis", icon: FileSearch, nomor: "4.4.5" }
 
-// Dipakai untuk sheet "Menu Lainnya" di mobile — daftar flat 3 placeholder yang belum dikerjakan.
-const ASPEK_PLACEHOLDER = [PLACEHOLDER_PENGAMANAN, PLACEHOLDER_KOMPETENSI, PLACEHOLDER_EVALUASI_KAJIAN]
-
-// Urutan render untuk sidebar desktop, DIURUTKAN SESUAI URUTAN TUGAS 1 → 5 di diagram,
-// bukan berdasarkan urutan definisi di atas. Ini yang menentukan urutan tampil di layar,
-// jadi kalau nanti Pengamanan Instalasi / Kompetensi Tenaga Teknik / Evaluasi Kajian
-// mulai dikerjakan dan diganti jadi grup menu asli, cukup ganti entrinya di sini tanpa
-// mengubah urutan.
+// Urutan tampil, DIURUTKAN SESUAI URUTAN TUGAS 1 → 5 di diagram. Dipakai untuk render
+// desktop MAUPUN sheet "Menu Lainnya" di mobile — satu sumber kebenaran struktur.
 const URUTAN_ASPEK_DESKTOP = [
   { tipe: "grup", data: GRUP_PEMELIHARAAN },
   { tipe: "placeholder", data: PLACEHOLDER_PENGAMANAN },
@@ -130,11 +126,12 @@ function ItemMenu({ item, indent = false }) {
   )
 }
 
-// Kop nomor regulasi kecil (mis. "4.4.3") ditampilkan di atas label grup/placeholder level atas.
-function NomorRegulasi({ nomor }) {
+// Kop nomor regulasi (mis. "4.4.3") ditampilkan di atas label — bold + warna aksen biru
+// karena ini informasi penting (nomor poin regulasi), bukan sekadar metadata biasa.
+function NomorRegulasi({ nomor, size = "text-xs" }) {
   if (!nomor) return null
   return (
-    <span className="block text-xs font-bold tracking-wide text-blue-600 dark:text-blue-400 leading-none mb-1">
+    <span className={`block ${size} font-bold tracking-wide text-blue-600 dark:text-blue-400 leading-none mb-1`}>
       {nomor}
     </span>
   )
@@ -205,6 +202,88 @@ function GrupPlaceholder({ label, icon: Icon, nomor }) {
   )
 }
 
+// ===== VERSI MOBILE untuk sheet "Menu Lainnya" =====
+// Dipetakan langsung dari URUTAN_ASPEK_DESKTOP supaya kelima poin regulasi (4.4.1–4.4.5)
+// selalu tampil lengkap dan urut, sama seperti di desktop.
+function GrupMenuMobile({ grup, terbuka, onToggle, pathname, onNavigate }) {
+  const Icon = grup.icon
+  const adaAktif = grup.items.some((it) => itemAktif(it, pathname))
+
+  return (
+    <div className="mb-1">
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`w-full flex items-start justify-between gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition ${
+          adaAktif ? "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30" : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+        }`}
+      >
+        <span className="flex items-start gap-2 text-left">
+          <Icon size={16} className="flex-shrink-0 mt-0.5" />
+          <span>
+            <NomorRegulasi nomor={grup.nomor} />
+            <span className="block">{grup.label}</span>
+          </span>
+        </span>
+        <ChevronDown size={14} className={`flex-shrink-0 mt-0.5 transition-transform ${terbuka ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {terbuka && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col gap-1 pt-1 pb-1 pl-3 ml-[9px] border-l-2 border-gray-100 dark:border-gray-800">
+              {grup.items.map((item) => {
+                const ItemIcon = item.icon
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.end}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 pl-4 pr-3 py-2 rounded-lg text-sm font-medium transition ${
+                        isActive
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      }`
+                    }
+                  >
+                    <ItemIcon size={16} />
+                    {item.label}
+                  </NavLink>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function PlaceholderMobile({ label, icon: Icon, nomor }) {
+  return (
+    <div className="flex items-start justify-between gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-400 dark:text-gray-600 mb-1 opacity-60 select-none">
+      <span className="flex items-start gap-2 text-left">
+        <Icon size={16} className="flex-shrink-0 mt-0.5" />
+        <span>
+          <NomorRegulasi nomor={nomor} />
+          <span className="block">{label}</span>
+        </span>
+      </span>
+      <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 whitespace-nowrap flex-shrink-0 mt-0.5">
+        Segera Hadir
+      </span>
+    </div>
+  )
+}
+
 function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -212,9 +291,14 @@ function Sidebar() {
   const [tema, setTemaState] = useState(ambilTema())
   const [menuLainnyaTerbuka, setMenuLainnyaTerbuka] = useState(false)
   const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true, aspek1: true })
+  const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true, aspek1: false })
 
   function toggleGrup(key) {
     setGrupTerbuka((sebelumnya) => ({ ...sebelumnya, [key]: !sebelumnya[key] }))
+  }
+
+  function toggleGrupMobile(key) {
+    setGrupTerbukaMobile((sebelumnya) => ({ ...sebelumnya, [key]: !sebelumnya[key] }))
   }
 
   function handleLogout() {
@@ -345,6 +429,8 @@ function Sidebar() {
       </div>
 
       {/* ===== BOTTOM SHEET: Menu Lainnya ===== */}
+      {/* Sekarang dipetakan langsung dari URUTAN_ASPEK_DESKTOP — kelima poin regulasi
+          (4.4.1–4.4.5) tampil lengkap dan urut, sama seperti sidebar desktop. */}
       <AnimatePresence>
         {menuLainnyaTerbuka && (
           <>
@@ -370,41 +456,24 @@ function Sidebar() {
                 </button>
               </div>
 
-              <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 px-1 mb-1.5">Kelayakan SPIP</p>
-              {GRUP_KELAYAKAN.items.filter((it) => it.path !== "/" && it.path !== "/data").map((item) => {
-                const Icon = item.icon
-                return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    onClick={tutupMenuLainnya}
-                    className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 mb-1 flex items-center gap-2"
-                  >
-                    <Icon size={16} />
-                    {item.label}
-                  </NavLink>
-                )
-              })}
-
-              <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 px-1 mb-1.5 mt-3">Aspek Lainnya</p>
-              {ASPEK_PLACEHOLDER.map((aspek) => {
-                const Icon = aspek.icon
-                return (
-                  <div
-                    key={aspek.key}
-                    className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-600 mb-1 flex items-start justify-between gap-2 opacity-60"
-                  >
-                    <span className="flex items-start gap-2">
-                      <Icon size={16} className="mt-0.5" />
-                      <span>
-                        <NomorRegulasi nomor={aspek.nomor} />
-                        <span className="block">{aspek.label}</span>
-                      </span>
-                    </span>
-                    <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 whitespace-nowrap mt-0.5">Segera Hadir</span>
-                  </div>
-                )
-              })}
+              {URUTAN_ASPEK_DESKTOP.map((entri, idx) => (
+                <div
+                  key={entri.data.key}
+                  className={idx > 0 ? "pt-2 mt-1 border-t border-gray-100 dark:border-gray-800" : ""}
+                >
+                  {entri.tipe === "grup" ? (
+                    <GrupMenuMobile
+                      grup={entri.data}
+                      terbuka={grupTerbukaMobile[entri.data.key]}
+                      onToggle={() => toggleGrupMobile(entri.data.key)}
+                      pathname={location.pathname}
+                      onNavigate={tutupMenuLainnya}
+                    />
+                  ) : (
+                    <PlaceholderMobile label={entri.data.label} icon={entri.data.icon} nomor={entri.data.nomor} />
+                  )}
+                </div>
+              ))}
 
               <div className="h-px bg-gray-200 dark:bg-gray-800 my-3"></div>
 
