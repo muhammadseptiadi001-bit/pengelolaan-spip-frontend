@@ -101,7 +101,7 @@ function grupAktif(grup, pathname) {
 // Cari grup (dari ASPEK_TAB_MOBILE) yang sedang aktif berdasarkan pathname, dan yang
 // punya lebih dari 1 sub-halaman — dipakai untuk menentukan apakah strip sub-tab
 // perlu ditampilkan.
-function cariGrupUntukSubTab(pathname) {
+export function cariGrupUntukSubTab(pathname) {
   return ASPEK_TAB_MOBILE.find((grup) => grup.items.length > 1 && grupAktif(grup, pathname))
 }
 
@@ -468,7 +468,7 @@ function Sidebar() {
           <button
             onClick={() => navigate('/input')}
             aria-label="Input SPIP"
-            className="absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+            className="absolute left-1/2 -translate-x-1/2 -top-4 w-14 h-14 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"
           >
             <Plus size={26} />
           </button>
