@@ -11,11 +11,6 @@ import { tampilkanToast } from '../utils/toast'
 
 const TENAGA_TEKNIK_URL = API_URL.replace('/unit', '/tenaga-teknik')
 
-// Master data lokal — kalau istilah di perusahaan beda, cukup ubah array ini.
-const PILIHAN_DEPARTEMEN = [
-  "Produksi", "Perawatan/Maintenance", "K3 & Lingkungan", "Teknik & Perencanaan", "Logistik", "Administrasi", "Lainnya"
-]
-
 // Daftar jenis kompetensi/sertifikasi tenaga teknik pertambangan. "Lainnya" selalu di
 // paling bawah — kalau dipilih, muncul kotak teks tambahan untuk diisi manual.
 const PILIHAN_JENIS_KOMPETENSI = [
@@ -33,7 +28,7 @@ const PILIHAN_JENIS_KOMPETENSI = [
   "Petugas Pemadam Kebakaran",
   "Anggota Tim Tanggap Darurat / ERT",
   "Petugas Industrial Hygiene",
-  "Loading/Berthing Master",
+  "Berthing Master / Loading",
   "Petugas Bahan Kimia",
   "Rigger / Juru Ikat",
   "Operator Pesawat Angkat dan/atau Angkut",
@@ -130,7 +125,7 @@ function KompetensiTeknik() {
   const [nama, setNama] = useState("")
   const [idKaryawan, setIdKaryawan] = useState("")
   const [jabatan, setJabatan] = useState("")
-  const [departemen, setDepartemen] = useState(PILIHAN_DEPARTEMEN[0])
+  const [departemen, setDepartemen] = useState("")
   const [kompetensi, setKompetensi] = useState(PILIHAN_JENIS_KOMPETENSI[0])
   const [kompetensiLainnya, setKompetensiLainnya] = useState("")
   const [noSertifikat, setNoSertifikat] = useState("")
@@ -228,7 +223,7 @@ function KompetensiTeknik() {
       if (!res.ok) throw new Error("Gagal menyimpan")
 
       tampilkanToast("Data tenaga teknik berhasil ditambahkan!", "sukses")
-      setNamaPerusahaan(""); setNama(""); setIdKaryawan(""); setJabatan(""); setDepartemen(PILIHAN_DEPARTEMEN[0])
+      setNamaPerusahaan(""); setNama(""); setIdKaryawan(""); setJabatan(""); setDepartemen("")
       setKompetensi(PILIHAN_JENIS_KOMPETENSI[0]); setKompetensiLainnya(""); setNoSertifikat(""); setInstansiPenerbit("")
       setTanggalTerbitSertifikat(""); setMasaBerlakuSertifikat("")
       setBerkasSertifikat(null); setNamaBerkas("")
@@ -314,9 +309,7 @@ function KompetensiTeknik() {
 
           <div>
             <LabelIkon icon={Building2}>Departemen</LabelIkon>
-            <select value={departemen} onChange={(e) => setDepartemen(e.target.value)} className={inputClass}>
-              {PILIHAN_DEPARTEMEN.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
+            <input type="text" placeholder="Ketik nama departemen" value={departemen} onChange={(e) => setDepartemen(e.target.value)} className={inputClass} />
           </div>
 
           <div>
