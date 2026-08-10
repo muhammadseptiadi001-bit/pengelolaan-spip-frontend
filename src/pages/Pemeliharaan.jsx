@@ -327,9 +327,9 @@ function Pemeliharaan() {
                     <tr key={p.id} className="border-b border-gray-100 dark:border-gray-800/60 text-gray-800 dark:text-gray-200">
                       <td className="py-2.5 px-3">{p.namaUnit} <span className="text-gray-400">({p.nomorUnit})</span></td>
                       <td className="py-2.5 px-3">{p.jenisPemeliharaan}</td>
-                      <td className="py-2.5 px-3">{formatTanggal(p.tanggalPelaksanaan)}</td>
+                      <td className="py-2.5 px-3">{formatTanggal(new Date(p.tanggalPelaksanaan))}</td>
                       <td className="py-2.5 px-3">{p.petugas || "-"}</td>
-                      <td className="py-2.5 px-3">{p.jadwalBerikutnya ? formatTanggal(p.jadwalBerikutnya) : "-"}</td>
+                      <td className="py-2.5 px-3">{p.jadwalBerikutnya ? formatTanggal(new Date(p.jadwalBerikutnya)) : "-"}</td>
                       <td className="py-2.5 px-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${badgeStatus(statusLabel)}`}>
                           {statusLabel || "Belum Dijadwalkan"}
