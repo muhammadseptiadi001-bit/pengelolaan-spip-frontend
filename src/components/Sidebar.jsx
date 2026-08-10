@@ -7,7 +7,7 @@ import {
   ClipboardList,
   History,
   BarChart3,
-  MoreHorizontal,
+  Menu,
   X,
   Moon,
   Sun,
@@ -37,8 +37,12 @@ import logoSicool from '../assets/logo-sicool.png'
 //
 // Field "nomor" = nomor poin regulasi (4.4.1 s/d 4.4.5), ditampilkan sebagai kop kecil
 // di atas label tiap grup/placeholder level atas — dipakai bersama oleh render desktop
-// DAN sheet "Menu Lainnya" di mobile (via URUTAN_ASPEK_DESKTOP), supaya satu sumber
-// struktur dipakai ulang dan tidak gampang tidak sinkron kalau berubah lagi nanti.
+// DAN sheet "Menu" mobile (via URUTAN_ASPEK_DESKTOP), satu sumber struktur.
+//
+// NAVIGASI MOBILE (Opsi 2 — hybrid): bottom nav cuma 3 ikon tercepat (Dashboard, Input
+// SPIP, Data SPIP) + 1 tombol "Menu" yang buka sheet berisi struktur LENGKAP (5 poin
+// regulasi + Input SPIP), supaya akses cepat tetap ada tanpa kehilangan informasi
+// hierarki di sheet.
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 
@@ -70,7 +74,7 @@ const PLACEHOLDER_KOMPETENSI = { key: "aspek4", label: "Kompetensi Tenaga Teknik
 const PLACEHOLDER_EVALUASI_KAJIAN = { key: "aspek5", label: "Evaluasi Laporan Hasil Kajian Teknis", icon: FileSearch, nomor: "4.4.5" }
 
 // Urutan tampil, DIURUTKAN SESUAI URUTAN TUGAS 1 → 5 di diagram. Dipakai untuk render
-// desktop MAUPUN sheet "Menu Lainnya" di mobile — satu sumber kebenaran struktur.
+// desktop MAUPUN sheet "Menu" di mobile — satu sumber kebenaran struktur.
 const URUTAN_ASPEK_DESKTOP = [
   { tipe: "grup", data: GRUP_PEMELIHARAAN },
   { tipe: "placeholder", data: PLACEHOLDER_PENGAMANAN },
@@ -79,13 +83,12 @@ const URUTAN_ASPEK_DESKTOP = [
   { tipe: "placeholder", data: PLACEHOLDER_EVALUASI_KAJIAN },
 ]
 
-// Item cepat untuk bottom nav mobile (dipilih manual, bukan diturunkan dari struktur di atas,
-// supaya Pemeliharaan yang baru tetap mudah dijangkau tanpa harus buka "Lainnya" dulu).
+// 3 ikon tercepat di bottom nav mobile — dipilih manual (bukan diturunkan dari struktur
+// di atas) supaya halaman paling sering dipakai tetap 1-tap tanpa buka sheet "Menu".
 const MENU_CEPAT_MOBILE = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { path: "/input", label: "Input SPIP", icon: FilePlus },
   { path: "/data", label: "Data SPIP", icon: ClipboardList },
-  { path: "/pemeliharaan", label: "Pemeliharaan", icon: Wrench },
 ]
 
 function itemAktif(item, pathname) {
@@ -93,12 +96,13 @@ function itemAktif(item, pathname) {
 }
 
 // ===== INDIKATOR ITEM AKTIF (sliding pill pakai layoutId Framer Motion) =====
-function ItemMenu({ item, indent = false }) {
+function ItemMenu({ item, indent = false, onNavigate }) {
   const Icon = item.icon
   return (
     <NavLink
       to={item.path}
       end={item.end}
+      onClick={onNavigate}
       className={({ isActive }) =>
         `relative flex items-center gap-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
           indent ? "pl-4 pr-3" : "px-3"
@@ -202,7 +206,7 @@ function GrupPlaceholder({ label, icon: Icon, nomor }) {
   )
 }
 
-// ===== VERSI MOBILE untuk sheet "Menu Lainnya" =====
+// ===== VERSI MOBILE untuk sheet "Menu" =====
 // Dipetakan langsung dari URUTAN_ASPEK_DESKTOP supaya kelima poin regulasi (4.4.1–4.4.5)
 // selalu tampil lengkap dan urut, sama seperti di desktop.
 function GrupMenuMobile({ grup, terbuka, onToggle, pathname, onNavigate }) {
@@ -289,7 +293,7 @@ function Sidebar() {
   const location = useLocation()
   const user = ambilUser()
   const [tema, setTemaState] = useState(ambilTema())
-  const [menuLainnyaTerbuka, setMenuLainnyaTerbuka] = useState(false)
+  const [menuTerbuka, setMenuTerbuka] = useState(false)
   const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true, aspek1: true })
   const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true, aspek1: false })
 
@@ -311,8 +315,8 @@ function Sidebar() {
     setTemaState(temaBaru)
   }
 
-  function tutupMenuLainnya() {
-    setMenuLainnyaTerbuka(false)
+  function tutupMenu() {
+    setMenuTerbuka(false)
   }
 
   return (
@@ -380,6 +384,7 @@ function Sidebar() {
       </div>
 
       {/* ===== MOBILE BOTTOM NAVIGATION BAR ===== */}
+      {/* Opsi 2 (hybrid): 3 ikon tercepat + 1 tombol "Menu" yang buka sheet lengkap. */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
         <div className="flex items-center justify-around">
           {MENU_CEPAT_MOBILE.map((item) => {
@@ -417,29 +422,27 @@ function Sidebar() {
           })}
 
           <button
-            onClick={() => setMenuLainnyaTerbuka(true)}
+            onClick={() => setMenuTerbuka(true)}
             className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-medium text-gray-500 dark:text-gray-400 min-w-[60px]"
           >
             <span className="p-1.5 rounded-full">
-              <MoreHorizontal size={20} />
+              <Menu size={20} />
             </span>
-            Lainnya
+            Menu
           </button>
         </div>
       </div>
 
-      {/* ===== BOTTOM SHEET: Menu Lainnya ===== */}
-      {/* Sekarang dipetakan langsung dari URUTAN_ASPEK_DESKTOP — kelima poin regulasi
-          (4.4.1–4.4.5) tampil lengkap dan urut, sama seperti sidebar desktop. */}
+      {/* ===== SHEET: Menu (struktur lengkap 5 poin regulasi + Input SPIP) ===== */}
       <AnimatePresence>
-        {menuLainnyaTerbuka && (
+        {menuTerbuka && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={tutupMenuLainnya}
+              onClick={tutupMenu}
               className="md:hidden fixed inset-0 bg-black/50 z-40"
             />
             <motion.div
@@ -450,11 +453,15 @@ function Sidebar() {
               className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 rounded-t-2xl p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] max-h-[80vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold text-gray-800 dark:text-white">Menu Lainnya</h2>
-                <button onClick={tutupMenuLainnya} className="text-gray-500 dark:text-gray-400">
+                <h2 className="text-sm font-bold text-gray-800 dark:text-white">Menu</h2>
+                <button onClick={tutupMenu} className="text-gray-500 dark:text-gray-400">
                   <X size={20} />
                 </button>
               </div>
+
+              <ItemMenu item={MENU_TUNGGAL} onNavigate={tutupMenu} />
+
+              <div className="h-px bg-gray-200 dark:bg-gray-800 my-3"></div>
 
               {URUTAN_ASPEK_DESKTOP.map((entri, idx) => (
                 <div
@@ -467,7 +474,7 @@ function Sidebar() {
                       terbuka={grupTerbukaMobile[entri.data.key]}
                       onToggle={() => toggleGrupMobile(entri.data.key)}
                       pathname={location.pathname}
-                      onNavigate={tutupMenuLainnya}
+                      onNavigate={tutupMenu}
                     />
                   ) : (
                     <PlaceholderMobile label={entri.data.label} icon={entri.data.icon} nomor={entri.data.nomor} />
