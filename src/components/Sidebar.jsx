@@ -30,15 +30,15 @@ import logoSicool from '../assets/logo-sicool.png'
 // lintas aspek (jadi pintu masuk untuk Aspek 1, 2, 3). Halaman-halaman yang sudah ada
 // (Dashboard, Data SPIP, Evaluasi, Riwayat) semuanya berputar di sekitar kelayakan,
 // jadi dibungkus sebagai grup "Kelayakan SPIP" (dulu disebut Aspek 3). Grup "Sistem &
-// Pelaksanaan Pemeliharaan SPIP" (dulu Aspek 1) baru mulai dikerjakan. Sisanya masih
-// placeholder "Segera Hadir" sampai mulai dikerjakan.
+// Pelaksanaan Pemeliharaan SPIP" (Aspek 1) dan "Pengamanan Instalasi" (Aspek 2) sudah
+// mulai dikerjakan. Sisanya masih placeholder "Segera Hadir" sampai mulai dikerjakan.
 //
 // Field "nomor" = nomor poin regulasi (4.4.1 s/d 4.4.5). Field "labelTab" = label
 // pendek khusus untuk tab bottom nav mobile (label asli terlalu panjang untuk tab).
 //
 // NAVIGASI MOBILE (Opsi A — bottom nav sebagai context switcher aspek):
 // - Bottom nav isinya TAB PER ASPEK yang sudah aktif dikerjakan (Pemeliharaan,
-//   Kelayakan SPIP), bukan lagi shortcut halaman acak.
+//   Pengamanan Instalasi, Kelayakan SPIP), bukan lagi shortcut halaman acak.
 // - Tombol "+" bulat navy di tengah, terangkat, khusus untuk Input SPIP.
 // - Tab "Menu" di ujung kanan membuka sheet lengkap (5 poin regulasi + placeholder +
 //   pengaturan), untuk aspek yang belum aktif dikerjakan.
@@ -73,7 +73,17 @@ const GRUP_PEMELIHARAAN = {
   ],
 }
 
-const PLACEHOLDER_PENGAMANAN = { key: "aspek2", label: "Pengamanan Instalasi", icon: ShieldAlert, nomor: "4.4.2" }
+const GRUP_PENGAMANAN = {
+  key: "aspek2",
+  label: "Pengamanan Instalasi",
+  labelTab: "Pengamanan Instalasi",
+  icon: ShieldAlert,
+  nomor: "4.4.2",
+  items: [
+    { path: "/pengamanan-instalasi", label: "Pengamanan Instalasi", icon: ShieldAlert },
+  ],
+}
+
 const PLACEHOLDER_KOMPETENSI = { key: "aspek4", label: "Kompetensi Tenaga Teknik", icon: UserCog, nomor: "4.4.4" }
 const PLACEHOLDER_EVALUASI_KAJIAN = { key: "aspek5", label: "Evaluasi Laporan Hasil Kajian Teknis", icon: FileSearch, nomor: "4.4.5" }
 
@@ -81,14 +91,14 @@ const PLACEHOLDER_EVALUASI_KAJIAN = { key: "aspek5", label: "Evaluasi Laporan Ha
 // desktop MAUPUN sheet "Menu" di mobile — satu sumber kebenaran struktur.
 const URUTAN_ASPEK_DESKTOP = [
   { tipe: "grup", data: GRUP_PEMELIHARAAN },
-  { tipe: "placeholder", data: PLACEHOLDER_PENGAMANAN },
+  { tipe: "grup", data: GRUP_PENGAMANAN },
   { tipe: "grup", data: GRUP_KELAYAKAN },
   { tipe: "placeholder", data: PLACEHOLDER_KOMPETENSI },
   { tipe: "placeholder", data: PLACEHOLDER_EVALUASI_KAJIAN },
 ]
 
 // Aspek yang tampil sebagai TAB di bottom nav mobile (hanya yang sudah aktif dikerjakan).
-const ASPEK_TAB_MOBILE = [GRUP_PEMELIHARAAN, GRUP_KELAYAKAN]
+const ASPEK_TAB_MOBILE = [GRUP_PEMELIHARAAN, GRUP_PENGAMANAN, GRUP_KELAYAKAN]
 
 function itemAktif(item, pathname) {
   return item.end ? pathname === item.path : pathname.startsWith(item.path)
@@ -300,8 +310,8 @@ function Sidebar() {
   const user = ambilUser()
   const [tema, setTemaState] = useState(ambilTema())
   const [menuTerbuka, setMenuTerbuka] = useState(false)
-  const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true, aspek1: true })
-  const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true, aspek1: false })
+  const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true, aspek1: true, aspek2: true })
+  const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true, aspek1: false, aspek2: false })
 
   function toggleGrup(key) {
     setGrupTerbuka((sebelumnya) => ({ ...sebelumnya, [key]: !sebelumnya[key] }))
@@ -392,9 +402,6 @@ function Sidebar() {
       </div>
 
       {/* ===== MOBILE SUB-TAB (hanya muncul saat berada di aspek dengan >1 sub-halaman) ===== */}
-      {/* CATATAN: strip ini menambah tinggi ~44px di bawah top bar. Kalau konten halaman
-          jadi ketiban/ketutup, tambahkan padding-top ekstra di Layout.jsx KHUSUS saat
-          pathname ada di dalam grupSubTab (misal pt-28 dibanding pt-16 biasa). */}
       {grupSubTab && (
         <div className="md:hidden fixed top-[52px] left-0 right-0 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-2 overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1 py-2">
@@ -419,24 +426,9 @@ function Sidebar() {
       )}
 
       {/* ===== MOBILE BOTTOM NAVIGATION BAR ===== */}
-      {/* Opsi A: tab per ASPEK (bukan per halaman) + tombol "+" navy di tengah untuk
-          Input SPIP + tab "Menu" untuk aspek yang belum aktif/pengaturan. */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
         <div className="relative bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-          
-            {ASPEK_TAB_MOBILE.map((grup) => {
-              const Icon = grup.icon
-              const aktif = grupAktif(grup, location.pathname)
-              return (
-                <NavLink
-                  key={grup.key}
-                  to={grup.items[0].path}
-                  className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-medium min-w-[64px]"
-                >
-                  <span className={`relative p-1.5 rounded-full transition-colors duration-150 ${aktif ? "bg-blue-50 dark:bg-blue-950" : ""}`}>
-                    {aktif && (
-                      <motion.div
-                <div className="flex items-center">
+          <div className="flex items-center">
             {/* Kelompok kiri: tab per aspek — flex-1 supaya lebar SELALU sama dengan kelompok kanan */}
             <div className="flex-1 flex items-center justify-around">
               {ASPEK_TAB_MOBILE.map((grup) => {
@@ -482,7 +474,7 @@ function Sidebar() {
               </button>
             </div>
           </div>
-          
+
           {/* Tombol "+" Input SPIP — bulat navy, terangkat di tengah bar */}
           <button
             onClick={() => navigate('/input')}

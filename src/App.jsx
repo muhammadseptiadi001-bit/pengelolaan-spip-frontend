@@ -12,6 +12,7 @@ const DataSPIP = lazy(() => import('./pages/DataSPIP'))
 const Riwayat = lazy(() => import('./pages/Riwayat'))
 const Evaluasi = lazy(() => import('./pages/Evaluasi'))
 const Pemeliharaan = lazy(() => import('./pages/Pemeliharaan'))
+const PengamananInstalasi = lazy(() => import('./pages/PengamananInstalasi'))
 
 function LoadingHalaman() {
   return (
@@ -77,6 +78,14 @@ function App() {
             element={
               <Suspense fallback={<LoadingHalaman />}>
                 <Pemeliharaan />
+              </Suspense>
+            }
+          />
+          <Route
+            path="pengamanan-instalasi"
+            element={
+              <Suspense fallback={<LoadingHalaman />}>
+                <PengamananInstalasi />
               </Suspense>
             }
           />
