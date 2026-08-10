@@ -2,19 +2,39 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   Wrench, CheckCircle2, AlertTriangle, XCircle, PackagePlus, Trash2, CalendarDays,
-  ClipboardList, UserCheck, Boxes, Loader2
+  ClipboardList, UserCheck, Boxes, Loader2, Filter, RotateCcw
 } from 'lucide-react'
-import { API_URL, hitungStatusWaktu, formatTanggal } from '../utils/spipHelpers'
+import { API_URL, PILIHAN_JENIS_SPIP, hitungStatusWaktu, formatTanggal } from '../utils/spipHelpers'
 import { apiFetch } from '../utils/apiFetch'
 import { ambilUser } from '../utils/auth'
 import { tampilkanToast } from '../utils/toast'
 
 const PEMELIHARAAN_URL = API_URL.replace('/unit', '/pemeliharaan')
 const JENIS_PEMELIHARAAN = ["Servis Rutin", "Perbaikan", "Pergantian Komponen", "Lainnya"]
+const NAMA_BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+
+const FILTER_AWAL = {
+  perusahaan: "",
+  jenisSpip: "Semua",
+  unitId: "Semua",
+  jenisPemeliharaan: "Semua",
+  bulan: "Semua",
+  status: "Semua",
+}
 
 function tanggalHariIni() {
   const sekarang = new Date()
   return `${sekarang.getFullYear()}-${String(sekarang.getMonth() + 1).padStart(2, "0")}-${String(sekarang.getDate()).padStart(2, "0")}`
+}
+
+function kunciBulan(tanggalString) {
+  const d = new Date(tanggalString)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+}
+
+function labelBulan(kunci) {
+  const [tahun, bulan] = kunci.split("-")
+  return `${NAMA_BULAN[Number(bulan) - 1]} ${tahun}`
 }
 
 function AngkaCountUp({ nilai, durasi = 800 }) {
@@ -74,7 +94,7 @@ function Pemeliharaan() {
   const [daftarUnit, setDaftarUnit] = useState([])
   const [daftarPemeliharaan, setDaftarPemeliharaan] = useState([])
   const [sedangMuat, setSedangMuat] = useState(true)
-  const [filterUnitId, setFilterUnitId] = useState("Semua")
+  const [filter, setFilter] = useState(FILTER_AWAL)
 
   const [unitTerpilih, setUnitTerpilih] = useState("")
   const [jenisPemeliharaan, setJenisPemeliharaan] = useState(JENIS_PEMELIHARAAN[0])
@@ -108,6 +128,22 @@ function Pemeliharaan() {
     }
   }
 
+  function updateFilter(kolom, nilai) {
+    setFilter((prev) => ({ ...prev, [kolom]: nilai }))
+  }
+
+  function resetFilter() {
+    setFilter(FILTER_AWAL)
+  }
+
+  // Lookup cepat unitId -> data unit (namaPerusahaan, jenisSpip), karena tabel pemeliharaan
+  // sendiri tidak menyimpan dua kolom itu — datanya diambil dari tabel unit lewat unitId.
+  const petaUnitById = useMemo(() => {
+    const peta = {}
+    daftarUnit.forEach((u) => { peta[u.id] = u })
+    return peta
+  }, [daftarUnit])
+
   // Jadwal berikutnya PALING BARU per unit (satu unit bisa punya banyak riwayat pemeliharaan,
   // yang dipakai untuk status Aman/Mendekati/Lewat adalah jadwal dari catatan pemeliharaan terakhir).
   const jadwalTerkiniPerUnit = useMemo(() => {
@@ -133,10 +169,30 @@ function Pemeliharaan() {
     return { aman, mendekati, lewat, belumDijadwalkan, totalTercatat: Object.keys(jadwalTerkiniPerUnit).length }
   }, [jadwalTerkiniPerUnit])
 
+  const daftarBulanTersedia = useMemo(() => {
+    const set = new Set(daftarPemeliharaan.map((p) => kunciBulan(p.tanggalPelaksanaan)))
+    return Array.from(set).sort().reverse()
+  }, [daftarPemeliharaan])
+
   const riwayatTerfilter = useMemo(() => {
-    if (filterUnitId === "Semua") return daftarPemeliharaan
-    return daftarPemeliharaan.filter((p) => String(p.unitId) === String(filterUnitId))
-  }, [daftarPemeliharaan, filterUnitId])
+    return daftarPemeliharaan.filter((p) => {
+      if (filter.unitId !== "Semua" && String(p.unitId) !== String(filter.unitId)) return false
+
+      const unit = petaUnitById[p.unitId]
+
+      if (filter.perusahaan && !(unit?.namaPerusahaan || "").toLowerCase().includes(filter.perusahaan.toLowerCase())) return false
+      if (filter.jenisSpip !== "Semua" && unit?.jenisSpip !== filter.jenisSpip) return false
+      if (filter.jenisPemeliharaan !== "Semua" && p.jenisPemeliharaan !== filter.jenisPemeliharaan) return false
+      if (filter.bulan !== "Semua" && kunciBulan(p.tanggalPelaksanaan) !== filter.bulan) return false
+
+      if (filter.status !== "Semua") {
+        const statusLabel = p.jadwalBerikutnya ? hitungStatusWaktu(new Date(p.jadwalBerikutnya)).label : "Belum Dijadwalkan"
+        if (statusLabel !== filter.status) return false
+      }
+
+      return true
+    })
+  }, [daftarPemeliharaan, filter, petaUnitById])
 
   async function tambahPemeliharaan() {
     if (!unitTerpilih || !jenisPemeliharaan || !tanggalPelaksanaan) {
@@ -199,6 +255,7 @@ function Pemeliharaan() {
   }
 
   const inputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl px-3.5 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400"
+  const filterInputClass = "w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-2.5 py-1.5 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
 
   return (
     <div>
@@ -294,23 +351,93 @@ function Pemeliharaan() {
         transition={{ delay: 0.1 }}
         className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div className="flex items-center justify-between gap-3 mb-4">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Riwayat Pemeliharaan</h2>
-          <select value={filterUnitId} onChange={(e) => setFilterUnitId(e.target.value)} className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 text-sm">
-            <option value="Semua">Semua Unit</option>
-            {daftarUnit.map((u) => (
-              <option key={u.id} value={u.id}>{u.namaUnit} — {u.nomorUnit}</option>
-            ))}
-          </select>
+          <button
+            onClick={resetFilter}
+            className="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
+          >
+            <RotateCcw size={12} /> Reset Filter
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1.5 mb-3 text-gray-400 dark:text-gray-500">
+          <Filter size={13} />
+          <span className="text-xs font-semibold uppercase tracking-wide">Filter</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Perusahaan</label>
+            <input
+              type="text"
+              placeholder="Cari perusahaan..."
+              value={filter.perusahaan}
+              onChange={(e) => updateFilter("perusahaan", e.target.value)}
+              className={filterInputClass}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Kategori SPIP</label>
+            <select value={filter.jenisSpip} onChange={(e) => updateFilter("jenisSpip", e.target.value)} className={filterInputClass}>
+              <option value="Semua">Semua</option>
+              {PILIHAN_JENIS_SPIP.map((jenis) => (
+                <option key={jenis} value={jenis}>{jenis}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Unit</label>
+            <select value={filter.unitId} onChange={(e) => updateFilter("unitId", e.target.value)} className={filterInputClass}>
+              <option value="Semua">Semua Unit</option>
+              {daftarUnit.map((u) => (
+                <option key={u.id} value={u.id}>{u.namaUnit} — {u.nomorUnit}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Jenis Pemeliharaan</label>
+            <select value={filter.jenisPemeliharaan} onChange={(e) => updateFilter("jenisPemeliharaan", e.target.value)} className={filterInputClass}>
+              <option value="Semua">Semua</option>
+              {JENIS_PEMELIHARAAN.map((j) => <option key={j} value={j}>{j}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Bulan Pelaksanaan</label>
+            <select value={filter.bulan} onChange={(e) => updateFilter("bulan", e.target.value)} className={filterInputClass}>
+              <option value="Semua">Semua Waktu</option>
+              {daftarBulanTersedia.map((kunci) => (
+                <option key={kunci} value={kunci}>{labelBulan(kunci)}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Status Jadwal</label>
+            <select value={filter.status} onChange={(e) => updateFilter("status", e.target.value)} className={filterInputClass}>
+              <option value="Semua">Semua</option>
+              <option value="Aman">Aman</option>
+              <option value="Mendekati Jatuh Tempo">Mendekati Jatuh Tempo</option>
+              <option value="Sudah Lewat">Sudah Lewat</option>
+              <option value="Belum Dijadwalkan">Belum Dijadwalkan</option>
+            </select>
+          </div>
         </div>
 
         {riwayatTerfilter.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">Belum ada catatan pemeliharaan.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">
+            {daftarPemeliharaan.length === 0 ? "Belum ada catatan pemeliharaan." : "Tidak ada data yang cocok dengan filter."}
+          </p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800">
+                  <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Perusahaan</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Unit</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Jenis</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tanggal</th>
@@ -323,8 +450,10 @@ function Pemeliharaan() {
               <tbody>
                 {riwayatTerfilter.map((p) => {
                   const statusLabel = p.jadwalBerikutnya ? hitungStatusWaktu(new Date(p.jadwalBerikutnya)).label : null
+                  const unit = petaUnitById[p.unitId]
                   return (
                     <tr key={p.id} className="border-b border-gray-100 dark:border-gray-800/60 text-gray-800 dark:text-gray-200">
+                      <td className="py-2.5 px-3">{unit?.namaPerusahaan || "-"}</td>
                       <td className="py-2.5 px-3">{p.namaUnit} <span className="text-gray-400">({p.nomorUnit})</span></td>
                       <td className="py-2.5 px-3">{p.jenisPemeliharaan}</td>
                       <td className="py-2.5 px-3">{formatTanggal(new Date(p.tanggalPelaksanaan))}</td>
