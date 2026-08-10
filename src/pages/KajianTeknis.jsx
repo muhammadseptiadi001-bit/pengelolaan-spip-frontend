@@ -17,12 +17,6 @@ const JENIS_KAJIAN_PERUBAHAN = "Perubahan/Modifikasi Proses, Sarana, Prasarana, 
 const PILIHAN_JENIS_KAJIAN = [JENIS_KAJIAN_AWAL, JENIS_KAJIAN_PERUBAHAN]
 const PILIHAN_STATUS_KEMEMADAIAN = ["Belum Direview", "Memadai", "Tidak Memadai"]
 
-// Sama dengan daftar departemen di KompetensiTeknik.jsx, supaya istilahnya konsisten
-// di seluruh aplikasi. Kalau perlu diubah, cukup edit array ini di kedua file.
-const PILIHAN_DEPARTEMEN = [
-  "Produksi", "Perawatan/Maintenance", "K3 & Lingkungan", "Teknik & Perencanaan", "Logistik", "Administrasi", "Lainnya"
-]
-
 function tanggalHariIni() {
   const sekarang = new Date()
   return `${sekarang.getFullYear()}-${String(sekarang.getMonth() + 1).padStart(2, "0")}-${String(sekarang.getDate()).padStart(2, "0")}`
@@ -101,7 +95,7 @@ function KajianTeknis() {
   const [sedangSimpanPengaturan, setSedangSimpanPengaturan] = useState(false)
 
   const [namaPerusahaan, setNamaPerusahaan] = useState("")
-  const [departemen, setDepartemen] = useState(PILIHAN_DEPARTEMEN[0])
+  const [departemen, setDepartemen] = useState("")
   const [judulKajian, setJudulKajian] = useState("")
   const [jenisKajian, setJenisKajian] = useState(PILIHAN_JENIS_KAJIAN[0])
   const [keteranganPerubahan, setKeteranganPerubahan] = useState("")
@@ -261,7 +255,7 @@ function KajianTeknis() {
       if (!res.ok) throw new Error("Gagal menyimpan")
 
       tampilkanToast("Kajian teknis berhasil ditambahkan!", "sukses")
-      setNamaPerusahaan(""); setDepartemen(PILIHAN_DEPARTEMEN[0])
+      setNamaPerusahaan(""); setDepartemen("")
       setJudulKajian(""); setJenisKajian(PILIHAN_JENIS_KAJIAN[0]); setKeteranganPerubahan("")
       setDaftarPenyusun([]); setInputPenyusun("")
       setTanggalKajian(""); setFileLaporan(null); setNamaFile("")
@@ -362,9 +356,7 @@ function KajianTeknis() {
 
           <div>
             <LabelIkon icon={Building2}>Departemen</LabelIkon>
-            <select value={departemen} onChange={(e) => setDepartemen(e.target.value)} className={inputClass}>
-              {PILIHAN_DEPARTEMEN.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
+            <input type="text" placeholder="Contoh: Teknik & Perencanaan" value={departemen} onChange={(e) => setDepartemen(e.target.value)} className={inputClass} />
           </div>
 
           <div className="md:col-span-2">
