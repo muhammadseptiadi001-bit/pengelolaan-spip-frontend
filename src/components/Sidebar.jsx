@@ -26,7 +26,9 @@ import { ambilTema, toggleTema } from '../utils/theme'
 import logoSicool from '../assets/logo-sicool.png'
 
 // ===== STRUKTUR MENU BERDASARKAN 5 ASPEK TUGAS & TANGGUNG JAWAB KO =====
-// Semua 5 aspek sekarang AKTIF (tidak ada lagi placeholder "Segera Hadir").
+// Semua 5 aspek AKTIF. Aspek dengan HANYA 1 sub-halaman dirender sebagai link langsung
+// (flat, highlight solid saat aktif) — bukan dropdown — karena dropdown untuk 1 item saja
+// cuma nambah klik tanpa guna. Aspek dengan >1 sub-halaman (Kelayakan SPIP) tetap dropdown.
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 
@@ -77,7 +79,6 @@ const GRUP_KOMPETENSI = {
   ],
 }
 
-// Aspek 5 — SEKARANG SUDAH AKTIF (sebelumnya placeholder).
 const GRUP_KAJIAN_TEKNIS = {
   key: "aspek5",
   label: "Evaluasi Laporan Hasil Kajian Teknis",
@@ -99,7 +100,7 @@ const URUTAN_ASPEK_DESKTOP = [
   { tipe: "grup", data: GRUP_KAJIAN_TEKNIS },
 ]
 
-// Aspek yang tampil sebagai TAB di bottom nav mobile (dibatasi 3 slot supaya FAB "+" di
+// Aspek yang tampil sebagai TAB di bottom nav mobile (dibatasi 3 slot supaya tombol "+" di
 // tengah tetap presisi). Aspek 4 & 5 diakses lewat sheet "Menu" di mobile.
 const ASPEK_TAB_MOBILE = [GRUP_PEMELIHARAAN, GRUP_PENGAMANAN, GRUP_KELAYAKAN]
 
@@ -115,6 +116,7 @@ export function cariGrupUntukSubTab(pathname) {
   return ASPEK_TAB_MOBILE.find((grup) => grup.items.length > 1 && grupAktif(grup, pathname))
 }
 
+// ===== INDIKATOR ITEM AKTIF (sliding pill pakai layoutId Framer Motion) =====
 function ItemMenu({ item, indent = false, onNavigate }) {
   const Icon = item.icon
   return (
@@ -149,10 +151,13 @@ function ItemMenu({ item, indent = false, onNavigate }) {
   )
 }
 
-function NomorRegulasi({ nomor, size = "text-xs" }) {
+// Kop nomor regulasi (mis. "4.4.3"). Saat item aktif dengan background solid biru,
+// dipakai warna terang (text-blue-100) supaya tetap terbaca; kalau tidak aktif, warna
+// aksen biru seperti biasa.
+function NomorRegulasi({ nomor, aktif = false, size = "text-xs" }) {
   if (!nomor) return null
   return (
-    <span className={`block ${size} font-bold tracking-wide text-blue-600 dark:text-blue-400 leading-none mb-1`}>
+    <span className={`block ${size} font-bold tracking-wide leading-none mb-1 ${aktif ? "text-blue-100" : "text-blue-600 dark:text-blue-400"}`}>
       {nomor}
     </span>
   )
@@ -202,6 +207,45 @@ function GrupMenuDesktop({ grup, terbuka, onToggle, pathname }) {
   )
 }
 
+// ===== VERSI "TEGAS": untuk aspek yang cuma punya 1 sub-halaman. Link langsung, tanpa
+// panah/expand, dengan highlight background solid biru penuh saat aktif — sama gayanya
+// dengan sliding pill di ItemMenu, supaya kelihatan tegas seperti menu flat pada umumnya. =====
+function ItemMenuTegas({ grup }) {
+  const item = grup.items[0]
+  const Icon = grup.icon
+  return (
+    <NavLink
+      to={item.path}
+      end={item.end}
+      className={({ isActive }) =>
+        `relative flex items-start gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors duration-150 ${
+          isActive
+            ? "text-white"
+            : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400"
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <motion.div
+              layoutId="indikator-aktif-desktop"
+              className="absolute inset-0 bg-blue-600 rounded-lg -z-10"
+              transition={{ type: "spring", stiffness: 500, damping: 35 }}
+            />
+          )}
+          <Icon size={16} className="flex-shrink-0 mt-0.5" />
+          <span>
+            <NomorRegulasi nomor={grup.nomor} aktif={isActive} />
+            <span className="block">{grup.label}</span>
+          </span>
+        </>
+      )}
+    </NavLink>
+  )
+}
+
+// ===== VERSI MOBILE untuk sheet "Menu" =====
 function GrupMenuMobile({ grup, terbuka, onToggle, pathname, onNavigate }) {
   const Icon = grup.icon
   const adaAktif = grupAktif(grup, pathname)
@@ -264,14 +308,44 @@ function GrupMenuMobile({ grup, terbuka, onToggle, pathname, onNavigate }) {
   )
 }
 
+// Versi mobile dari ItemMenuTegas — untuk aspek 1 sub-halaman di sheet "Menu".
+function ItemMenuTegasMobile({ grup, onNavigate }) {
+  const item = grup.items[0]
+  const Icon = grup.icon
+  return (
+    <NavLink
+      to={item.path}
+      end={item.end}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        `flex items-start gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition mb-1 ${
+          isActive
+            ? "bg-blue-600 text-white"
+            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <Icon size={16} className="flex-shrink-0 mt-0.5" />
+          <span>
+            <NomorRegulasi nomor={grup.nomor} aktif={isActive} />
+            <span className="block">{grup.label}</span>
+          </span>
+        </>
+      )}
+    </NavLink>
+  )
+}
+
 function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = ambilUser()
   const [tema, setTemaState] = useState(ambilTema())
   const [menuTerbuka, setMenuTerbuka] = useState(false)
-  const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true, aspek1: true, aspek2: true, aspek4: true, aspek5: true })
-  const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true, aspek1: false, aspek2: false, aspek4: false, aspek5: false })
+  const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true })
+  const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true })
 
   function toggleGrup(key) {
     setGrupTerbuka((sebelumnya) => ({ ...sebelumnya, [key]: !sebelumnya[key] }))
@@ -318,12 +392,16 @@ function Sidebar() {
               key={entri.data.key}
               className={idx > 0 ? "pt-2 mt-1 border-t border-gray-100 dark:border-gray-800" : ""}
             >
-              <GrupMenuDesktop
-                grup={entri.data}
-                terbuka={grupTerbuka[entri.data.key]}
-                onToggle={() => toggleGrup(entri.data.key)}
-                pathname={location.pathname}
-              />
+              {entri.data.items.length > 1 ? (
+                <GrupMenuDesktop
+                  grup={entri.data}
+                  terbuka={grupTerbuka[entri.data.key]}
+                  onToggle={() => toggleGrup(entri.data.key)}
+                  pathname={location.pathname}
+                />
+              ) : (
+                <ItemMenuTegas grup={entri.data} />
+              )}
             </div>
           ))}
         </nav>
@@ -382,9 +460,12 @@ function Sidebar() {
       )}
 
       {/* ===== MOBILE BOTTOM NAVIGATION BAR ===== */}
+      {/* Tombol "+" sekarang MENYATU dengan baris menu (bukan melayang di atas lagi), tapi
+          tetap PERSIS di tengah karena diapit dua kelompok flex-1 yang lebarnya sama. */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
-        <div className="relative bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
           <div className="flex items-center">
+            {/* Kelompok kiri: tab per aspek — flex-1 supaya lebar SELALU sama dengan kelompok kanan */}
             <div className="flex-1 flex items-center justify-around">
               {ASPEK_TAB_MOBILE.map((grup) => {
                 const Icon = grup.icon
@@ -413,8 +494,19 @@ function Sidebar() {
               })}
             </div>
 
-            <div className="w-16 flex-shrink-0" aria-hidden="true"></div>
+            {/* Tombol "+" Input SPIP — sekarang inline di dalam baris (tidak melayang/overlap),
+                tapi selalu tepat di tengah karena celah ini sama lebar (w-16) dengan kelompok kanan. */}
+            <div className="w-16 flex-shrink-0 flex items-center justify-center">
+              <button
+                onClick={() => navigate('/input')}
+                aria-label="Input SPIP"
+                className="w-12 h-12 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-md active:scale-95 transition-transform"
+              >
+                <Plus size={22} />
+              </button>
+            </div>
 
+            {/* Kelompok kanan: flex-1 juga, supaya tombol "+" presisi di titik tengah bar */}
             <div className="flex-1 flex items-center justify-around">
               <button
                 onClick={() => setMenuTerbuka(true)}
@@ -427,18 +519,10 @@ function Sidebar() {
               </button>
             </div>
           </div>
-
-          <button
-            onClick={() => navigate('/input')}
-            aria-label="Input SPIP"
-            className="absolute left-1/2 -translate-x-1/2 -top-4 w-14 h-14 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"
-          >
-            <Plus size={26} />
-          </button>
         </div>
       </div>
 
-      {/* ===== SHEET: Menu ===== */}
+      {/* ===== SHEET: Menu (struktur lengkap 5 poin regulasi + Input SPIP + pengaturan) ===== */}
       <AnimatePresence>
         {menuTerbuka && (
           <>
@@ -473,13 +557,17 @@ function Sidebar() {
                   key={entri.data.key}
                   className={idx > 0 ? "pt-2 mt-1 border-t border-gray-100 dark:border-gray-800" : ""}
                 >
-                  <GrupMenuMobile
-                    grup={entri.data}
-                    terbuka={grupTerbukaMobile[entri.data.key]}
-                    onToggle={() => toggleGrupMobile(entri.data.key)}
-                    pathname={location.pathname}
-                    onNavigate={tutupMenu}
-                  />
+                  {entri.data.items.length > 1 ? (
+                    <GrupMenuMobile
+                      grup={entri.data}
+                      terbuka={grupTerbukaMobile[entri.data.key]}
+                      onToggle={() => toggleGrupMobile(entri.data.key)}
+                      pathname={location.pathname}
+                      onNavigate={tutupMenu}
+                    />
+                  ) : (
+                    <ItemMenuTegasMobile grup={entri.data} onNavigate={tutupMenu} />
+                  )}
                 </div>
               ))}
 
