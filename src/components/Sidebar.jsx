@@ -134,7 +134,7 @@ function ItemMenu({ item, indent = false }) {
 function NomorRegulasi({ nomor }) {
   if (!nomor) return null
   return (
-    <span className="block text-[10px] font-semibold tracking-wide text-gray-400 dark:text-gray-500 leading-none mb-1">
+    <span className="block text-xs font-bold tracking-wide text-blue-600 dark:text-blue-400 leading-none mb-1">
       {nomor}
     </span>
   )
