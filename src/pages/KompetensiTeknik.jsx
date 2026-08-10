@@ -4,7 +4,7 @@ import {
   UserCog, CheckCircle2, AlertTriangle, XCircle, PackagePlus, Trash2, CalendarDays,
   BadgeCheck, Building2, Briefcase, Hash, FileText, ImagePlus, Loader2, Users
 } from 'lucide-react'
-import { API_URL, UPLOAD_URL, PILIHAN_JENIS_SPIP, hitungStatusWaktu, formatTanggal } from '../utils/spipHelpers'
+import { API_URL, UPLOAD_URL, hitungStatusWaktu, formatTanggal } from '../utils/spipHelpers'
 import { apiFetch } from '../utils/apiFetch'
 import { ambilUser } from '../utils/auth'
 import { tampilkanToast } from '../utils/toast'
@@ -12,18 +12,34 @@ import { tampilkanToast } from '../utils/toast'
 const TENAGA_TEKNIK_URL = API_URL.replace('/unit', '/tenaga-teknik')
 
 // Master data lokal — kalau istilah di perusahaan beda, cukup ubah array ini.
-const PILIHAN_JABATAN = [
-  "Kepala Teknik Tambang", "Wakil Kepala Teknik Tambang", "Pengawas Operasional",
-  "Pengawas Teknis", "Teknisi", "Operator", "Juru Ukur Tambang", "Lainnya"
-]
 const PILIHAN_DEPARTEMEN = [
   "Produksi", "Perawatan/Maintenance", "K3 & Lingkungan", "Teknik & Perencanaan", "Logistik", "Administrasi", "Lainnya"
 ]
+
+// Daftar jenis kompetensi/sertifikasi tenaga teknik pertambangan. "Lainnya" selalu di
+// paling bawah — kalau dipilih, muncul kotak teks tambahan untuk diisi manual.
 const PILIHAN_JENIS_KOMPETENSI = [
-  "POP (Pengawas Operasional Pertama)", "POM (Pengawas Operasional Madya)", "POU (Pengawas Operasional Utama)",
-  "Juru Ukur Tambang", "Juru Ledak", "Teknisi K3 Pertambangan", "Operator Alat Berat Bersertifikat", "Lainnya"
+  "Juru Ledak",
+  "Juru Ukur",
+  "Juru Las / Welder",
+  "Juru Bor",
+  "Juru Derek / Crane Operator",
+  "Juru Rawat / Paramedis",
+  "Juru Langsir",
+  "Petugas Proteksi Radiasi",
+  "Ahli Listrik",
+  "Petugas/Juru Ventilasi (tambang bawah tanah)",
+  "Petugas P3K / First Aider",
+  "Petugas Pemadam Kebakaran",
+  "Anggota Tim Tanggap Darurat / ERT",
+  "Petugas Industrial Hygiene",
+  "Loading/Berthing Master",
+  "Petugas Bahan Kimia",
+  "Rigger / Juru Ikat",
+  "Operator Pesawat Angkat dan/atau Angkut",
+  "Petugas Gudang Bahan Peledak",
+  "Lainnya",
 ]
-const PILIHAN_CAKUPAN = ["Semua Kategori", ...PILIHAN_JENIS_SPIP]
 
 function tanggalHariIni() {
   const sekarang = new Date()
@@ -110,16 +126,17 @@ function KompetensiTeknik() {
   const [sedangMuat, setSedangMuat] = useState(true)
   const [filterStatus, setFilterStatus] = useState("Semua")
 
+  const [namaPerusahaan, setNamaPerusahaan] = useState("")
   const [nama, setNama] = useState("")
   const [idKaryawan, setIdKaryawan] = useState("")
-  const [jabatan, setJabatan] = useState(PILIHAN_JABATAN[0])
+  const [jabatan, setJabatan] = useState("")
   const [departemen, setDepartemen] = useState(PILIHAN_DEPARTEMEN[0])
   const [kompetensi, setKompetensi] = useState(PILIHAN_JENIS_KOMPETENSI[0])
+  const [kompetensiLainnya, setKompetensiLainnya] = useState("")
   const [noSertifikat, setNoSertifikat] = useState("")
   const [instansiPenerbit, setInstansiPenerbit] = useState("")
   const [tanggalTerbitSertifikat, setTanggalTerbitSertifikat] = useState("")
   const [masaBerlakuSertifikat, setMasaBerlakuSertifikat] = useState("")
-  const [cakupanKompetensi, setCakupanKompetensi] = useState(PILIHAN_CAKUPAN[0])
   const [berkasSertifikat, setBerkasSertifikat] = useState(null)
   const [namaBerkas, setNamaBerkas] = useState("")
   const [sedangUploadBerkas, setSedangUploadBerkas] = useState(false)
@@ -177,8 +194,14 @@ function KompetensiTeknik() {
   }
 
   async function tambahTenagaTeknik() {
-    if (!nama || !idKaryawan || !jabatan || !kompetensi || !noSertifikat) {
-      tampilkanToast("Nama, ID Karyawan, Jabatan, Kompetensi, dan No Sertifikat wajib diisi!", "gagal")
+    const kompetensiFinal = kompetensi === "Lainnya" ? kompetensiLainnya.trim() : kompetensi
+
+    if (!namaPerusahaan || !nama || !idKaryawan || !jabatan || !kompetensiFinal || !noSertifikat) {
+      tampilkanToast("Nama Perusahaan, Nama, ID Karyawan, Jabatan, Kompetensi, dan No Sertifikat wajib diisi!", "gagal")
+      return
+    }
+    if (kompetensi === "Lainnya" && !kompetensiLainnya.trim()) {
+      tampilkanToast("Isi jenis kompetensi pada kolom \"Lainnya\" terlebih dahulu.", "gagal")
       return
     }
     if (tanggalTerbitSertifikat && tanggalTerbitSertifikat > tanggalHariIni()) {
@@ -196,18 +219,18 @@ function KompetensiTeknik() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nama, idKaryawan, jabatan, departemen, kompetensi, noSertifikat,
+          namaPerusahaan, nama, idKaryawan, jabatan, departemen, kompetensi: kompetensiFinal, noSertifikat,
           instansiPenerbit, tanggalTerbitSertifikat: tanggalTerbitSertifikat || null,
           masaBerlakuSertifikat: masaBerlakuSertifikat || null,
-          cakupanKompetensi, berkasSertifikat,
+          berkasSertifikat,
         }),
       })
       if (!res.ok) throw new Error("Gagal menyimpan")
 
       tampilkanToast("Data tenaga teknik berhasil ditambahkan!", "sukses")
-      setNama(""); setIdKaryawan(""); setJabatan(PILIHAN_JABATAN[0]); setDepartemen(PILIHAN_DEPARTEMEN[0])
-      setKompetensi(PILIHAN_JENIS_KOMPETENSI[0]); setNoSertifikat(""); setInstansiPenerbit("")
-      setTanggalTerbitSertifikat(""); setMasaBerlakuSertifikat(""); setCakupanKompetensi(PILIHAN_CAKUPAN[0])
+      setNamaPerusahaan(""); setNama(""); setIdKaryawan(""); setJabatan(""); setDepartemen(PILIHAN_DEPARTEMEN[0])
+      setKompetensi(PILIHAN_JENIS_KOMPETENSI[0]); setKompetensiLainnya(""); setNoSertifikat(""); setInstansiPenerbit("")
+      setTanggalTerbitSertifikat(""); setMasaBerlakuSertifikat("")
       setBerkasSertifikat(null); setNamaBerkas("")
       ambilData()
     } catch (err) {
@@ -270,6 +293,11 @@ function KompetensiTeknik() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
+            <LabelIkon icon={Building2}>Nama Perusahaan</LabelIkon>
+            <input type="text" placeholder="Nama Perusahaan" value={namaPerusahaan} onChange={(e) => setNamaPerusahaan(e.target.value)} className={inputClass} />
+          </div>
+
+          <div>
             <LabelIkon icon={UserCog}>Nama</LabelIkon>
             <input type="text" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} className={inputClass} />
           </div>
@@ -281,9 +309,7 @@ function KompetensiTeknik() {
 
           <div>
             <LabelIkon icon={Briefcase}>Jabatan</LabelIkon>
-            <select value={jabatan} onChange={(e) => setJabatan(e.target.value)} className={inputClass}>
-              {PILIHAN_JABATAN.map((j) => <option key={j} value={j}>{j}</option>)}
-            </select>
+            <input type="text" placeholder="Contoh: Kepala Teknik Tambang" value={jabatan} onChange={(e) => setJabatan(e.target.value)} className={inputClass} />
           </div>
 
           <div>
@@ -300,6 +326,19 @@ function KompetensiTeknik() {
             </select>
           </div>
 
+          {kompetensi === "Lainnya" && (
+            <div className="md:col-span-2">
+              <LabelIkon icon={BadgeCheck}>Jenis Kompetensi Lainnya</LabelIkon>
+              <input
+                type="text"
+                placeholder="Ketik jenis kompetensi/sertifikasi"
+                value={kompetensiLainnya}
+                onChange={(e) => setKompetensiLainnya(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          )}
+
           <div>
             <LabelIkon icon={Hash}>No Sertifikat</LabelIkon>
             <input type="text" placeholder="Nomor sertifikat" value={noSertifikat} onChange={(e) => setNoSertifikat(e.target.value)} className={inputClass} />
@@ -308,13 +347,6 @@ function KompetensiTeknik() {
           <div>
             <LabelIkon icon={Building2}>Instansi Penerbit Sertifikat</LabelIkon>
             <input type="text" placeholder="Contoh: Kementerian ESDM" value={instansiPenerbit} onChange={(e) => setInstansiPenerbit(e.target.value)} className={inputClass} />
-          </div>
-
-          <div>
-            <LabelIkon icon={BadgeCheck}>Cakupan Kompetensi</LabelIkon>
-            <select value={cakupanKompetensi} onChange={(e) => setCakupanKompetensi(e.target.value)} className={inputClass}>
-              {PILIHAN_CAKUPAN.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
           </div>
 
           <div>
@@ -379,6 +411,7 @@ function KompetensiTeknik() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800">
+                  <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Perusahaan</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">ID Karyawan</th>
                   <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Jabatan</th>
@@ -396,6 +429,7 @@ function KompetensiTeknik() {
                   const statusLabel = labelStatusSertifikat(t.masaBerlakuSertifikat)
                   return (
                     <tr key={t.id} className="border-b border-gray-100 dark:border-gray-800/60 text-gray-800 dark:text-gray-200">
+                      <td className="py-2.5 px-3 whitespace-nowrap">{t.namaPerusahaan || "-"}</td>
                       <td className="py-2.5 px-3 font-medium whitespace-nowrap">{t.nama}</td>
                       <td className="py-2.5 px-3 whitespace-nowrap">{t.idKaryawan}</td>
                       <td className="py-2.5 px-3 whitespace-nowrap">{t.jabatan}</td>
