@@ -26,10 +26,7 @@ import { ambilTema, toggleTema } from '../utils/theme'
 import logoSicool from '../assets/logo-sicool.png'
 
 // ===== STRUKTUR MENU BERDASARKAN 5 ASPEK TUGAS & TANGGUNG JAWAB KO =====
-// "Input SPIP" berdiri sendiri di luar grup karena sifatnya general — datanya dipakai
-// lintas aspek (jadi pintu masuk untuk Aspek 1, 2, 3). Aspek 4 (Kompetensi Tenaga Teknik)
-// datanya BERDIRI SENDIRI, tidak berasal dari Input SPIP, jadi sekarang jadi grup aktif
-// juga (sebelumnya placeholder). Aspek 5 masih placeholder "Segera Hadir".
+// Semua 5 aspek sekarang AKTIF (tidak ada lagi placeholder "Segera Hadir").
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 
@@ -69,7 +66,6 @@ const GRUP_PENGAMANAN = {
   ],
 }
 
-// Aspek 4 — SEKARANG SUDAH AKTIF (sebelumnya placeholder).
 const GRUP_KOMPETENSI = {
   key: "aspek4",
   label: "Kompetensi Tenaga Teknik",
@@ -81,21 +77,30 @@ const GRUP_KOMPETENSI = {
   ],
 }
 
-const PLACEHOLDER_EVALUASI_KAJIAN = { key: "aspek5", label: "Evaluasi Laporan Hasil Kajian Teknis", icon: FileSearch, nomor: "4.4.5" }
+// Aspek 5 — SEKARANG SUDAH AKTIF (sebelumnya placeholder).
+const GRUP_KAJIAN_TEKNIS = {
+  key: "aspek5",
+  label: "Evaluasi Laporan Hasil Kajian Teknis",
+  labelTab: "Kajian Teknis",
+  icon: FileSearch,
+  nomor: "4.4.5",
+  items: [
+    { path: "/kajian-teknis", label: "Evaluasi Laporan Hasil Kajian Teknis", icon: FileSearch },
+  ],
+}
 
-// Urutan tampil, DIURUTKAN SESUAI URUTAN TUGAS 1 → 5 di diagram. Dipakai untuk render
-// desktop MAUPUN sheet "Menu" di mobile — satu sumber kebenaran struktur.
+// Urutan tampil, DIURUTKAN SESUAI URUTAN TUGAS 1 → 5. Dipakai untuk render desktop
+// MAUPUN sheet "Menu" di mobile — satu sumber kebenaran struktur.
 const URUTAN_ASPEK_DESKTOP = [
   { tipe: "grup", data: GRUP_PEMELIHARAAN },
   { tipe: "grup", data: GRUP_PENGAMANAN },
   { tipe: "grup", data: GRUP_KELAYAKAN },
   { tipe: "grup", data: GRUP_KOMPETENSI },
-  { tipe: "placeholder", data: PLACEHOLDER_EVALUASI_KAJIAN },
+  { tipe: "grup", data: GRUP_KAJIAN_TEKNIS },
 ]
 
 // Aspek yang tampil sebagai TAB di bottom nav mobile (dibatasi 3 slot supaya FAB "+" di
-// tengah tetap presisi). Aspek 4 yang baru aktif TIDAK ditambah ke bottom nav — tetap bisa
-// diakses lewat sheet "Menu" di mobile, sama seperti Aspek 1/2/3 lewat sidebar desktop.
+// tengah tetap presisi). Aspek 4 & 5 diakses lewat sheet "Menu" di mobile.
 const ASPEK_TAB_MOBILE = [GRUP_PEMELIHARAAN, GRUP_PENGAMANAN, GRUP_KELAYAKAN]
 
 function itemAktif(item, pathname) {
@@ -106,14 +111,10 @@ function grupAktif(grup, pathname) {
   return grup.items.some((it) => itemAktif(it, pathname))
 }
 
-// Cari grup (dari ASPEK_TAB_MOBILE) yang sedang aktif berdasarkan pathname, dan yang
-// punya lebih dari 1 sub-halaman — dipakai untuk menentukan apakah strip sub-tab
-// perlu ditampilkan.
 export function cariGrupUntukSubTab(pathname) {
   return ASPEK_TAB_MOBILE.find((grup) => grup.items.length > 1 && grupAktif(grup, pathname))
 }
 
-// ===== INDIKATOR ITEM AKTIF (sliding pill pakai layoutId Framer Motion) =====
 function ItemMenu({ item, indent = false, onNavigate }) {
   const Icon = item.icon
   return (
@@ -148,7 +149,6 @@ function ItemMenu({ item, indent = false, onNavigate }) {
   )
 }
 
-// Kop nomor regulasi (mis. "4.4.3") — bold + warna aksen biru karena info penting.
 function NomorRegulasi({ nomor, size = "text-xs" }) {
   if (!nomor) return null
   return (
@@ -202,27 +202,6 @@ function GrupMenuDesktop({ grup, terbuka, onToggle, pathname }) {
   )
 }
 
-function GrupPlaceholder({ label, icon: Icon, nomor }) {
-  return (
-    <div
-      title="Belum tersedia"
-      className="flex items-start justify-between gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-gray-350 dark:text-gray-600 opacity-60 cursor-not-allowed select-none"
-    >
-      <span className="flex items-start gap-2 text-left">
-        <Icon size={16} className="flex-shrink-0 mt-0.5" />
-        <span>
-          <NomorRegulasi nomor={nomor} />
-          <span className="block">{label}</span>
-        </span>
-      </span>
-      <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 whitespace-nowrap flex-shrink-0 mt-0.5">
-        Segera Hadir
-      </span>
-    </div>
-  )
-}
-
-// ===== VERSI MOBILE untuk sheet "Menu" =====
 function GrupMenuMobile({ grup, terbuka, onToggle, pathname, onNavigate }) {
   const Icon = grup.icon
   const adaAktif = grupAktif(grup, pathname)
@@ -285,31 +264,14 @@ function GrupMenuMobile({ grup, terbuka, onToggle, pathname, onNavigate }) {
   )
 }
 
-function PlaceholderMobile({ label, icon: Icon, nomor }) {
-  return (
-    <div className="flex items-start justify-between gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-400 dark:text-gray-600 mb-1 opacity-60 select-none">
-      <span className="flex items-start gap-2 text-left">
-        <Icon size={16} className="flex-shrink-0 mt-0.5" />
-        <span>
-          <NomorRegulasi nomor={nomor} />
-          <span className="block">{label}</span>
-        </span>
-      </span>
-      <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 whitespace-nowrap flex-shrink-0 mt-0.5">
-        Segera Hadir
-      </span>
-    </div>
-  )
-}
-
 function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = ambilUser()
   const [tema, setTemaState] = useState(ambilTema())
   const [menuTerbuka, setMenuTerbuka] = useState(false)
-  const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true, aspek1: true, aspek2: true, aspek4: true })
-  const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true, aspek1: false, aspek2: false, aspek4: false })
+  const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true, aspek1: true, aspek2: true, aspek4: true, aspek5: true })
+  const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true, aspek1: false, aspek2: false, aspek4: false, aspek5: false })
 
   function toggleGrup(key) {
     setGrupTerbuka((sebelumnya) => ({ ...sebelumnya, [key]: !sebelumnya[key] }))
@@ -356,16 +318,12 @@ function Sidebar() {
               key={entri.data.key}
               className={idx > 0 ? "pt-2 mt-1 border-t border-gray-100 dark:border-gray-800" : ""}
             >
-              {entri.tipe === "grup" ? (
-                <GrupMenuDesktop
-                  grup={entri.data}
-                  terbuka={grupTerbuka[entri.data.key]}
-                  onToggle={() => toggleGrup(entri.data.key)}
-                  pathname={location.pathname}
-                />
-              ) : (
-                <GrupPlaceholder label={entri.data.label} icon={entri.data.icon} nomor={entri.data.nomor} />
-              )}
+              <GrupMenuDesktop
+                grup={entri.data}
+                terbuka={grupTerbuka[entri.data.key]}
+                onToggle={() => toggleGrup(entri.data.key)}
+                pathname={location.pathname}
+              />
             </div>
           ))}
         </nav>
@@ -427,7 +385,6 @@ function Sidebar() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
         <div className="relative bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
           <div className="flex items-center">
-            {/* Kelompok kiri: tab per aspek — flex-1 supaya lebar SELALU sama dengan kelompok kanan */}
             <div className="flex-1 flex items-center justify-around">
               {ASPEK_TAB_MOBILE.map((grup) => {
                 const Icon = grup.icon
@@ -456,10 +413,8 @@ function Sidebar() {
               })}
             </div>
 
-            {/* Celah tengah kosong — lebar tetap, ini tempat FAB "+" duduk di atasnya */}
             <div className="w-16 flex-shrink-0" aria-hidden="true"></div>
 
-            {/* Kelompok kanan: flex-1 juga, supaya celah tengah presisi di titik tengah bar */}
             <div className="flex-1 flex items-center justify-around">
               <button
                 onClick={() => setMenuTerbuka(true)}
@@ -473,7 +428,6 @@ function Sidebar() {
             </div>
           </div>
 
-          {/* Tombol "+" Input SPIP — bulat navy, terangkat di tengah bar */}
           <button
             onClick={() => navigate('/input')}
             aria-label="Input SPIP"
@@ -484,7 +438,7 @@ function Sidebar() {
         </div>
       </div>
 
-      {/* ===== SHEET: Menu (struktur lengkap 5 poin regulasi + Input SPIP + pengaturan) ===== */}
+      {/* ===== SHEET: Menu ===== */}
       <AnimatePresence>
         {menuTerbuka && (
           <>
@@ -519,17 +473,13 @@ function Sidebar() {
                   key={entri.data.key}
                   className={idx > 0 ? "pt-2 mt-1 border-t border-gray-100 dark:border-gray-800" : ""}
                 >
-                  {entri.tipe === "grup" ? (
-                    <GrupMenuMobile
-                      grup={entri.data}
-                      terbuka={grupTerbukaMobile[entri.data.key]}
-                      onToggle={() => toggleGrupMobile(entri.data.key)}
-                      pathname={location.pathname}
-                      onNavigate={tutupMenu}
-                    />
-                  ) : (
-                    <PlaceholderMobile label={entri.data.label} icon={entri.data.icon} nomor={entri.data.nomor} />
-                  )}
+                  <GrupMenuMobile
+                    grup={entri.data}
+                    terbuka={grupTerbukaMobile[entri.data.key]}
+                    onToggle={() => toggleGrupMobile(entri.data.key)}
+                    pathname={location.pathname}
+                    onNavigate={tutupMenu}
+                  />
                 </div>
               ))}
 

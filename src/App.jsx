@@ -5,7 +5,6 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
-// Halaman-halaman berat dimuat "lazy" - kodenya baru diambil saat dibuka
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const InputData = lazy(() => import('./pages/InputData'))
 const DataSPIP = lazy(() => import('./pages/DataSPIP'))
@@ -14,6 +13,7 @@ const Evaluasi = lazy(() => import('./pages/Evaluasi'))
 const Pemeliharaan = lazy(() => import('./pages/Pemeliharaan'))
 const PengamananInstalasi = lazy(() => import('./pages/PengamananInstalasi'))
 const KompetensiTeknik = lazy(() => import('./pages/KompetensiTeknik'))
+const KajianTeknis = lazy(() => import('./pages/KajianTeknis'))
 
 function LoadingHalaman() {
   return (
@@ -95,6 +95,14 @@ function App() {
             element={
               <Suspense fallback={<LoadingHalaman />}>
                 <KompetensiTeknik />
+              </Suspense>
+            }
+          />
+          <Route
+            path="kajian-teknis"
+            element={
+              <Suspense fallback={<LoadingHalaman />}>
+                <KajianTeknis />
               </Suspense>
             }
           />
