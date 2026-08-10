@@ -436,7 +436,7 @@ function KompetensiTeknik() {
                       <td className="py-2.5 px-3 whitespace-nowrap">{t.departemen || "-"}</td>
                       <td className="py-2.5 px-3">{t.kompetensi}</td>
                       <td className="py-2.5 px-3 whitespace-nowrap">{t.noSertifikat}</td>
-                      <td className="py-2.5 px-3 whitespace-nowrap">{t.masaBerlakuSertifikat ? formatTanggal(t.masaBerlakuSertifikat) : "-"}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">{t.masaBerlakuSertifikat ? formatTanggal(new Date(t.masaBerlakuSertifikat)) : "-"}</td>
                       <td className="py-2.5 px-3 whitespace-nowrap">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${badgeStatus(statusLabel)}`}>{statusLabel}</span>
                       </td>
