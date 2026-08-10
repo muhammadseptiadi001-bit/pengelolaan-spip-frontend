@@ -423,7 +423,7 @@ function Sidebar() {
           Input SPIP + tab "Menu" untuk aspek yang belum aktif/pengaturan. */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
         <div className="relative bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center justify-around">
+          
             {ASPEK_TAB_MOBILE.map((grup) => {
               const Icon = grup.icon
               const aktif = grupAktif(grup, location.pathname)
@@ -436,34 +436,53 @@ function Sidebar() {
                   <span className={`relative p-1.5 rounded-full transition-colors duration-150 ${aktif ? "bg-blue-50 dark:bg-blue-950" : ""}`}>
                     {aktif && (
                       <motion.div
-                        layoutId="indikator-aktif-mobile"
-                        className="absolute inset-0 rounded-full bg-blue-50 dark:bg-blue-950 -z-10"
-                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                      />
-                    )}
-                    <Icon size={20} className={aktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"} />
-                  </span>
-                  <span className={aktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"}>
-                    {grup.labelTab}
-                  </span>
-                </NavLink>
-              )
-            })}
+                <div className="flex items-center">
+            {/* Kelompok kiri: tab per aspek — flex-1 supaya lebar SELALU sama dengan kelompok kanan */}
+            <div className="flex-1 flex items-center justify-around">
+              {ASPEK_TAB_MOBILE.map((grup) => {
+                const Icon = grup.icon
+                const aktif = grupAktif(grup, location.pathname)
+                return (
+                  <NavLink
+                    key={grup.key}
+                    to={grup.items[0].path}
+                    className="flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-[11px] font-medium"
+                  >
+                    <span className={`relative p-1.5 rounded-full transition-colors duration-150 ${aktif ? "bg-blue-50 dark:bg-blue-950" : ""}`}>
+                      {aktif && (
+                        <motion.div
+                          layoutId="indikator-aktif-mobile"
+                          className="absolute inset-0 rounded-full bg-blue-50 dark:bg-blue-950 -z-10"
+                          transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                        />
+                      )}
+                      <Icon size={20} className={aktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"} />
+                    </span>
+                    <span className={aktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"}>
+                      {grup.labelTab}
+                    </span>
+                  </NavLink>
+                )
+              })}
+            </div>
 
-            {/* Spacer supaya tab kiri & kanan tidak ketutup tombol + di tengah */}
-            <div className="w-14 flex-shrink-0" aria-hidden="true"></div>
+            {/* Celah tengah kosong — lebar tetap, ini tempat FAB "+" duduk di atasnya */}
+            <div className="w-16 flex-shrink-0" aria-hidden="true"></div>
 
-            <button
-              onClick={() => setMenuTerbuka(true)}
-              className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-medium text-gray-500 dark:text-gray-400 min-w-[64px]"
-            >
-              <span className="p-1.5 rounded-full">
-                <Menu size={20} />
-              </span>
-              Menu
-            </button>
+            {/* Kelompok kanan: flex-1 juga, supaya celah tengah presisi di titik tengah bar */}
+            <div className="flex-1 flex items-center justify-around">
+              <button
+                onClick={() => setMenuTerbuka(true)}
+                className="flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-[11px] font-medium text-gray-500 dark:text-gray-400"
+              >
+                <span className="p-1.5 rounded-full">
+                  <Menu size={20} />
+                </span>
+                Menu
+              </button>
+            </div>
           </div>
-
+          
           {/* Tombol "+" Input SPIP — bulat navy, terangkat di tengah bar */}
           <button
             onClick={() => navigate('/input')}
