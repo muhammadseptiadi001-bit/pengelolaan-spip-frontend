@@ -91,6 +91,44 @@ function itemAktif(item, pathname) {
   return item.end ? pathname === item.path : pathname.startsWith(item.path)
 }
 
+// ===== INDIKATOR ITEM AKTIF (sliding pill pakai layoutId Framer Motion) =====
+// Dipasang sebagai layer absolute di belakang konten NavLink. layoutId yang sama
+// ("indikator-aktif-desktop") bikin Framer Motion otomatis animasikan posisi/ukuran
+// saat pindah dari satu item aktif ke item aktif lainnya, jadi terasa "geser" bukan
+// cuma ganti warna instan.
+function ItemMenu({ item, indent = false }) {
+  const Icon = item.icon
+  return (
+    <NavLink
+      to={item.path}
+      end={item.end}
+      className={({ isActive }) =>
+        `relative flex items-center gap-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
+          indent ? "pl-4 pr-3" : "px-3"
+        } ${
+          isActive
+            ? "text-white"
+            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400"
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <motion.div
+              layoutId="indikator-aktif-desktop"
+              className="absolute inset-0 bg-blue-600 rounded-lg -z-10"
+              transition={{ type: "spring", stiffness: 500, damping: 35 }}
+            />
+          )}
+          <Icon size={16} className="flex-shrink-0" />
+          {item.label}
+        </>
+      )}
+    </NavLink>
+  )
+}
+
 function GrupMenuDesktop({ grup, terbuka, onToggle, pathname }) {
   const Icon = grup.icon
   const adaAktif = grup.items.some((it) => itemAktif(it, pathname))
@@ -120,27 +158,11 @@ function GrupMenuDesktop({ grup, terbuka, onToggle, pathname }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="flex flex-col gap-1 pl-2 pt-1 pb-1">
-              {grup.items.map((item) => {
-                const ItemIcon = item.icon
-                return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.end}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
-                        isActive
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400"
-                      }`
-                    }
-                  >
-                    <ItemIcon size={16} />
-                    {item.label}
-                  </NavLink>
-                )
-              })}
+            {/* Rel vertikal tipis di kiri sebagai penanda visual "anak dari grup ini" */}
+            <div className="flex flex-col gap-1 pt-1 pb-1 pl-3 ml-[9px] border-l-2 border-gray-100 dark:border-gray-800">
+              {grup.items.map((item) => (
+                <ItemMenu key={item.path} item={item} indent />
+              ))}
             </div>
           </motion.div>
         )}
@@ -204,35 +226,27 @@ function Sidebar() {
         </div>
 
         <nav className="flex flex-col gap-1.5 flex-1">
-          <NavLink
-            to={MENU_TUNGGAL.path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
-                isActive
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400"
-              }`
-            }
-          >
-            <MENU_TUNGGAL.icon size={18} />
-            {MENU_TUNGGAL.label}
-          </NavLink>
+          <ItemMenu item={MENU_TUNGGAL} />
 
           <div className="h-px bg-gray-200 dark:bg-gray-800 my-2"></div>
 
-          {URUTAN_ASPEK_DESKTOP.map((entri) =>
-            entri.tipe === "grup" ? (
-              <GrupMenuDesktop
-                key={entri.data.key}
-                grup={entri.data}
-                terbuka={grupTerbuka[entri.data.key]}
-                onToggle={() => toggleGrup(entri.data.key)}
-                pathname={location.pathname}
-              />
-            ) : (
-              <GrupPlaceholder key={entri.data.key} label={entri.data.label} icon={entri.data.icon} />
-            )
-          )}
+          {URUTAN_ASPEK_DESKTOP.map((entri, idx) => (
+            <div
+              key={entri.data.key}
+              className={idx > 0 ? "pt-2 mt-1 border-t border-gray-100 dark:border-gray-800" : ""}
+            >
+              {entri.tipe === "grup" ? (
+                <GrupMenuDesktop
+                  grup={entri.data}
+                  terbuka={grupTerbuka[entri.data.key]}
+                  onToggle={() => toggleGrup(entri.data.key)}
+                  pathname={location.pathname}
+                />
+              ) : (
+                <GrupPlaceholder label={entri.data.label} icon={entri.data.icon} />
+              )}
+            </div>
+          ))}
         </nav>
 
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
@@ -284,7 +298,14 @@ function Sidebar() {
               >
                 {({ isActive }) => (
                   <>
-                    <span className={`p-1.5 rounded-full transition ${isActive ? "bg-blue-50 dark:bg-blue-950" : ""}`}>
+                    <span className={`relative p-1.5 rounded-full transition-colors duration-150 ${isActive ? "bg-blue-50 dark:bg-blue-950" : ""}`}>
+                      {isActive && (
+                        <motion.div
+                          layoutId="indikator-aktif-mobile"
+                          className="absolute inset-0 rounded-full bg-blue-50 dark:bg-blue-950 -z-10"
+                          transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                        />
+                      )}
                       <Icon size={20} />
                     </span>
                     {item.label}
