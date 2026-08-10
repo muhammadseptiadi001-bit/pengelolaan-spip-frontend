@@ -8,6 +8,7 @@ import {
   History,
   BarChart3,
   Menu,
+  Plus,
   X,
   Moon,
   Sun,
@@ -32,23 +33,25 @@ import logoSicool from '../assets/logo-sicool.png'
 // Pelaksanaan Pemeliharaan SPIP" (dulu Aspek 1) baru mulai dikerjakan. Sisanya masih
 // placeholder "Segera Hadir" sampai mulai dikerjakan.
 //
-// Label sengaja TIDAK memakai awalan "Aspek X —" lagi — pakai nama tugasnya langsung
-// (mengikuti istilah di diagram tugas Kepala Teknik Tambang) supaya lebih informatif.
+// Field "nomor" = nomor poin regulasi (4.4.1 s/d 4.4.5). Field "labelTab" = label
+// pendek khusus untuk tab bottom nav mobile (label asli terlalu panjang untuk tab).
 //
-// Field "nomor" = nomor poin regulasi (4.4.1 s/d 4.4.5), ditampilkan sebagai kop kecil
-// di atas label tiap grup/placeholder level atas — dipakai bersama oleh render desktop
-// DAN sheet "Menu" mobile (via URUTAN_ASPEK_DESKTOP), satu sumber struktur.
-//
-// NAVIGASI MOBILE (Opsi 2 — hybrid): bottom nav cuma 3 ikon tercepat (Dashboard, Input
-// SPIP, Data SPIP) + 1 tombol "Menu" yang buka sheet berisi struktur LENGKAP (5 poin
-// regulasi + Input SPIP), supaya akses cepat tetap ada tanpa kehilangan informasi
-// hierarki di sheet.
+// NAVIGASI MOBILE (Opsi A — bottom nav sebagai context switcher aspek):
+// - Bottom nav isinya TAB PER ASPEK yang sudah aktif dikerjakan (Pemeliharaan,
+//   Kelayakan SPIP), bukan lagi shortcut halaman acak.
+// - Tombol "+" bulat navy di tengah, terangkat, khusus untuk Input SPIP.
+// - Tab "Menu" di ujung kanan membuka sheet lengkap (5 poin regulasi + placeholder +
+//   pengaturan), untuk aspek yang belum aktif dikerjakan.
+// - Saat berada di dalam aspek yang punya banyak sub-halaman (Kelayakan SPIP), muncul
+//   strip tab kedua di bawah top bar untuk pindah sub-halaman (Dashboard/Data SPIP/
+//   Evaluasi/Riwayat) tanpa perlu buka sheet Menu.
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 
 const GRUP_KELAYAKAN = {
   key: "aspek3",
   label: "Kelayakan SPIP",
+  labelTab: "Kelayakan SPIP",
   icon: ShieldCheck,
   nomor: "4.4.3",
   items: [
@@ -62,6 +65,7 @@ const GRUP_KELAYAKAN = {
 const GRUP_PEMELIHARAAN = {
   key: "aspek1",
   label: "Sistem & Pelaksanaan Pemeliharaan SPIP",
+  labelTab: "Pemeliharaan",
   icon: Wrench,
   nomor: "4.4.1",
   items: [
@@ -83,16 +87,22 @@ const URUTAN_ASPEK_DESKTOP = [
   { tipe: "placeholder", data: PLACEHOLDER_EVALUASI_KAJIAN },
 ]
 
-// 3 ikon tercepat di bottom nav mobile — dipilih manual (bukan diturunkan dari struktur
-// di atas) supaya halaman paling sering dipakai tetap 1-tap tanpa buka sheet "Menu".
-const MENU_CEPAT_MOBILE = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { path: "/input", label: "Input SPIP", icon: FilePlus },
-  { path: "/data", label: "Data SPIP", icon: ClipboardList },
-]
+// Aspek yang tampil sebagai TAB di bottom nav mobile (hanya yang sudah aktif dikerjakan).
+const ASPEK_TAB_MOBILE = [GRUP_PEMELIHARAAN, GRUP_KELAYAKAN]
 
 function itemAktif(item, pathname) {
   return item.end ? pathname === item.path : pathname.startsWith(item.path)
+}
+
+function grupAktif(grup, pathname) {
+  return grup.items.some((it) => itemAktif(it, pathname))
+}
+
+// Cari grup (dari ASPEK_TAB_MOBILE) yang sedang aktif berdasarkan pathname, dan yang
+// punya lebih dari 1 sub-halaman — dipakai untuk menentukan apakah strip sub-tab
+// perlu ditampilkan.
+function cariGrupUntukSubTab(pathname) {
+  return ASPEK_TAB_MOBILE.find((grup) => grup.items.length > 1 && grupAktif(grup, pathname))
 }
 
 // ===== INDIKATOR ITEM AKTIF (sliding pill pakai layoutId Framer Motion) =====
@@ -130,8 +140,7 @@ function ItemMenu({ item, indent = false, onNavigate }) {
   )
 }
 
-// Kop nomor regulasi (mis. "4.4.3") ditampilkan di atas label — bold + warna aksen biru
-// karena ini informasi penting (nomor poin regulasi), bukan sekadar metadata biasa.
+// Kop nomor regulasi (mis. "4.4.3") — bold + warna aksen biru karena info penting.
 function NomorRegulasi({ nomor, size = "text-xs" }) {
   if (!nomor) return null
   return (
@@ -143,7 +152,7 @@ function NomorRegulasi({ nomor, size = "text-xs" }) {
 
 function GrupMenuDesktop({ grup, terbuka, onToggle, pathname }) {
   const Icon = grup.icon
-  const adaAktif = grup.items.some((it) => itemAktif(it, pathname))
+  const adaAktif = grupAktif(grup, pathname)
 
   return (
     <div>
@@ -173,7 +182,6 @@ function GrupMenuDesktop({ grup, terbuka, onToggle, pathname }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            {/* Rel vertikal tipis di kiri sebagai penanda visual "anak dari grup ini" */}
             <div className="flex flex-col gap-1 pt-1 pb-1 pl-3 ml-[9px] border-l-2 border-gray-100 dark:border-gray-800">
               {grup.items.map((item) => (
                 <ItemMenu key={item.path} item={item} indent />
@@ -207,11 +215,9 @@ function GrupPlaceholder({ label, icon: Icon, nomor }) {
 }
 
 // ===== VERSI MOBILE untuk sheet "Menu" =====
-// Dipetakan langsung dari URUTAN_ASPEK_DESKTOP supaya kelima poin regulasi (4.4.1–4.4.5)
-// selalu tampil lengkap dan urut, sama seperti di desktop.
 function GrupMenuMobile({ grup, terbuka, onToggle, pathname, onNavigate }) {
   const Icon = grup.icon
-  const adaAktif = grup.items.some((it) => itemAktif(it, pathname))
+  const adaAktif = grupAktif(grup, pathname)
 
   return (
     <div className="mb-1">
@@ -319,6 +325,8 @@ function Sidebar() {
     setMenuTerbuka(false)
   }
 
+  const grupSubTab = cariGrupUntukSubTab(location.pathname)
+
   return (
     <>
       {/* ===== DESKTOP SIDEBAR (md ke atas) ===== */}
@@ -383,57 +391,91 @@ function Sidebar() {
         <span className="text-gray-900 dark:text-white text-sm font-bold">Pengelolaan SPIP</span>
       </div>
 
-      {/* ===== MOBILE BOTTOM NAVIGATION BAR ===== */}
-      {/* Opsi 2 (hybrid): 3 ikon tercepat + 1 tombol "Menu" yang buka sheet lengkap. */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-        <div className="flex items-center justify-around">
-          {MENU_CEPAT_MOBILE.map((item) => {
-            const Icon = item.icon
-            return (
+      {/* ===== MOBILE SUB-TAB (hanya muncul saat berada di aspek dengan >1 sub-halaman) ===== */}
+      {/* CATATAN: strip ini menambah tinggi ~44px di bawah top bar. Kalau konten halaman
+          jadi ketiban/ketutup, tambahkan padding-top ekstra di Layout.jsx KHUSUS saat
+          pathname ada di dalam grupSubTab (misal pt-28 dibanding pt-16 biasa). */}
+      {grupSubTab && (
+        <div className="md:hidden fixed top-[52px] left-0 right-0 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-2 overflow-x-auto whitespace-nowrap">
+          <div className="flex items-center gap-1 py-2">
+            {grupSubTab.items.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-medium transition min-w-[60px] ${
+                  `flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${
                     isActive
-                      ? "text-blue-600 dark:text-blue-400"
-                      : "text-gray-500 dark:text-gray-400"
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800"
                   }`
                 }
               >
-                {({ isActive }) => (
-                  <>
-                    <span className={`relative p-1.5 rounded-full transition-colors duration-150 ${isActive ? "bg-blue-50 dark:bg-blue-950" : ""}`}>
-                      {isActive && (
-                        <motion.div
-                          layoutId="indikator-aktif-mobile"
-                          className="absolute inset-0 rounded-full bg-blue-50 dark:bg-blue-950 -z-10"
-                          transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                        />
-                      )}
-                      <Icon size={20} />
-                    </span>
-                    {item.label}
-                  </>
-                )}
+                {item.label}
               </NavLink>
-            )
-          })}
+            ))}
+          </div>
+        </div>
+      )}
 
+      {/* ===== MOBILE BOTTOM NAVIGATION BAR ===== */}
+      {/* Opsi A: tab per ASPEK (bukan per halaman) + tombol "+" navy di tengah untuk
+          Input SPIP + tab "Menu" untuk aspek yang belum aktif/pengaturan. */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
+        <div className="relative bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+          <div className="flex items-center justify-around">
+            {ASPEK_TAB_MOBILE.map((grup) => {
+              const Icon = grup.icon
+              const aktif = grupAktif(grup, location.pathname)
+              return (
+                <NavLink
+                  key={grup.key}
+                  to={grup.items[0].path}
+                  className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-medium min-w-[64px]"
+                >
+                  <span className={`relative p-1.5 rounded-full transition-colors duration-150 ${aktif ? "bg-blue-50 dark:bg-blue-950" : ""}`}>
+                    {aktif && (
+                      <motion.div
+                        layoutId="indikator-aktif-mobile"
+                        className="absolute inset-0 rounded-full bg-blue-50 dark:bg-blue-950 -z-10"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                      />
+                    )}
+                    <Icon size={20} className={aktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"} />
+                  </span>
+                  <span className={aktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"}>
+                    {grup.labelTab}
+                  </span>
+                </NavLink>
+              )
+            })}
+
+            {/* Spacer supaya tab kiri & kanan tidak ketutup tombol + di tengah */}
+            <div className="w-14 flex-shrink-0" aria-hidden="true"></div>
+
+            <button
+              onClick={() => setMenuTerbuka(true)}
+              className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-medium text-gray-500 dark:text-gray-400 min-w-[64px]"
+            >
+              <span className="p-1.5 rounded-full">
+                <Menu size={20} />
+              </span>
+              Menu
+            </button>
+          </div>
+
+          {/* Tombol "+" Input SPIP — bulat navy, terangkat di tengah bar */}
           <button
-            onClick={() => setMenuTerbuka(true)}
-            className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-medium text-gray-500 dark:text-gray-400 min-w-[60px]"
+            onClick={() => navigate('/input')}
+            aria-label="Input SPIP"
+            className="absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"
           >
-            <span className="p-1.5 rounded-full">
-              <Menu size={20} />
-            </span>
-            Menu
+            <Plus size={26} />
           </button>
         </div>
       </div>
 
-      {/* ===== SHEET: Menu (struktur lengkap 5 poin regulasi + Input SPIP) ===== */}
+      {/* ===== SHEET: Menu (struktur lengkap 5 poin regulasi + Input SPIP + pengaturan) ===== */}
       <AnimatePresence>
         {menuTerbuka && (
           <>
