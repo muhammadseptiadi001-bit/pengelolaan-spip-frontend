@@ -29,12 +29,11 @@ import logoSicool from '../assets/logo-sicool.png'
 // Semua 5 aspek AKTIF. Aspek dengan HANYA 1 sub-halaman dirender sebagai link langsung
 // (flat, highlight solid saat aktif) — bukan dropdown.
 //
-// BOTTOM NAV MOBILE (diperbaiki): sebelumnya dipecah 3 kiri / 2 kanan dengan lebar wadah
-// sama besar (flex-1 di kedua sisi) — akibatnya 3 item di kiri harus berbagi ruang yang
-// sama dengan 2 item di kanan, jadi lebih sempit dan labelnya terpotong. Sekarang KELIMA
-// tab dijejer rata dalam SATU baris penuh (justify-around, lebar sama semua), dan tombol
-// "+" Input SPIP kembali jadi FAB yang MELAYANG DI ATAS (absolute, tidak makan slot di
-// baris) — jadi tidak ada lagi sisi yang lebih sempit dari sisi lain.
+// BOTTOM NAV MOBILE (revisi ke-2): FAB "+" Input SPIP sebelumnya melayang di TENGAH atas
+// bar dan menutupi label tab tengah (Kelayakan). Sekarang FAB dipindah ke POJOK KIRI
+// BAWAH — supaya tidak menutupi tab pertama (Pemeliharaan), bar diberi padding-kiri
+// (pl-16) sebagai "ruang khusus" untuk FAB, dan kelima tab digeser mulai setelah ruang
+// itu. FAB sendiri absolute di pojok kiri, terangkat di atas garis bar (-top-4).
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 
@@ -106,8 +105,7 @@ const URUTAN_ASPEK_DESKTOP = [
   { tipe: "grup", data: GRUP_KAJIAN_TEKNIS },
 ]
 
-// Kelima aspek tampil di bottom nav mobile — sekarang dalam SATU baris rata, bukan
-// dipecah kiri/kanan.
+// Kelima aspek tampil di bottom nav mobile, dalam satu baris rata.
 const ASPEK_TAB_MOBILE = [GRUP_PEMELIHARAAN, GRUP_PENGAMANAN, GRUP_KELAYAKAN, GRUP_KOMPETENSI, GRUP_KAJIAN_TEKNIS]
 
 function itemAktif(item, pathname) {
@@ -343,8 +341,7 @@ function ItemMenuTegasMobile({ grup, onNavigate }) {
   )
 }
 
-// Tab bottom nav mobile untuk satu aspek — sekarang dipakai dalam satu baris rata untuk
-// kelima aspek sekaligus (flex-1 di semua item, lebar otomatis sama rata).
+// Tab bottom nav mobile untuk satu aspek — flex-1 supaya kelima tab lebar rata.
 function TabAspekMobile({ grup, pathname }) {
   const Icon = grup.icon
   const aktif = grupAktif(grup, pathname)
@@ -502,11 +499,11 @@ function Sidebar() {
       )}
 
       {/* ===== MOBILE BOTTOM NAVIGATION BAR ===== */}
-      {/* Kelima aspek dalam SATU baris rata (flex-1 semua, lebar otomatis sama persis).
-          Tombol "+" Input SPIP MELAYANG DI ATAS (absolute, tidak makan slot horizontal),
-          jadi tidak ada lagi sisi yang lebih sempit dari sisi lain. */}
+      {/* FAB "+" Input SPIP di POJOK KIRI, melayang di atas bar (-top-4). Bar diberi
+          pl-16 (ruang kosong seukuran FAB) supaya kelima tab mulai SETELAH ruang itu —
+          jadi FAB tidak menutupi tab pertama (Pemeliharaan) atau tab manapun. */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
-        <div className="relative bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-1 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+        <div className="relative bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pl-16 pr-1 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
           <div className="flex items-center">
             {ASPEK_TAB_MOBILE.map((grup) => (
               <TabAspekMobile key={grup.key} grup={grup} pathname={location.pathname} />
@@ -516,7 +513,7 @@ function Sidebar() {
           <button
             onClick={() => navigate('/input')}
             aria-label="Input SPIP"
-            className="absolute left-1/2 -translate-x-1/2 -top-4 w-14 h-14 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+            className="absolute left-2 -top-4 w-14 h-14 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"
           >
             <Plus size={26} />
           </button>
