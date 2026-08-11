@@ -27,14 +27,14 @@ import logoSicool from '../assets/logo-sicool.png'
 
 // ===== STRUKTUR MENU BERDASARKAN 5 ASPEK TUGAS & TANGGUNG JAWAB KO =====
 // Semua 5 aspek AKTIF. Aspek dengan HANYA 1 sub-halaman dirender sebagai link langsung
-// (flat, highlight solid saat aktif) — bukan dropdown — karena dropdown untuk 1 item saja
-// cuma nambah klik tanpa guna. Aspek dengan >1 sub-halaman (Kelayakan SPIP) tetap dropdown.
+// (flat, highlight solid saat aktif) — bukan dropdown.
 //
-// PERUBAHAN MOBILE: sebelumnya bottom nav cuma menampilkan 3 dari 5 aspek + tombol "Menu"
-// di kanan-bawah untuk sisanya. Sekarang SEMUA 5 aspek tampil langsung di bottom nav
-// (dibagi 3 kiri / 2 kanan, tombol "+" Input SPIP tetap presisi di tengah), dan tombol
-// "Menu" dipindah ke pojok KANAN ATAS (top bar) — sheet "Menu" isinya tetap sama
-// (listing 5 aspek + Input SPIP + tema + user + logout), cuma pemicunya yang pindah.
+// BOTTOM NAV MOBILE (diperbaiki): sebelumnya dipecah 3 kiri / 2 kanan dengan lebar wadah
+// sama besar (flex-1 di kedua sisi) — akibatnya 3 item di kiri harus berbagi ruang yang
+// sama dengan 2 item di kanan, jadi lebih sempit dan labelnya terpotong. Sekarang KELIMA
+// tab dijejer rata dalam SATU baris penuh (justify-around, lebar sama semua), dan tombol
+// "+" Input SPIP kembali jadi FAB yang MELAYANG DI ATAS (absolute, tidak makan slot di
+// baris) — jadi tidak ada lagi sisi yang lebih sempit dari sisi lain.
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 
@@ -106,11 +106,9 @@ const URUTAN_ASPEK_DESKTOP = [
   { tipe: "grup", data: GRUP_KAJIAN_TEKNIS },
 ]
 
-// Sekarang SEMUA 5 aspek tampil di bottom nav mobile — dibagi 3 kiri / 2 kanan supaya
-// tombol "+" Input SPIP tetap presisi di tengah (dua kelompok flex-1 yang lebarnya sama).
+// Kelima aspek tampil di bottom nav mobile — sekarang dalam SATU baris rata, bukan
+// dipecah kiri/kanan.
 const ASPEK_TAB_MOBILE = [GRUP_PEMELIHARAAN, GRUP_PENGAMANAN, GRUP_KELAYAKAN, GRUP_KOMPETENSI, GRUP_KAJIAN_TEKNIS]
-const ASPEK_TAB_MOBILE_KIRI = ASPEK_TAB_MOBILE.slice(0, 3)
-const ASPEK_TAB_MOBILE_KANAN = ASPEK_TAB_MOBILE.slice(3)
 
 function itemAktif(item, pathname) {
   return item.end ? pathname === item.path : pathname.startsWith(item.path)
@@ -345,14 +343,15 @@ function ItemMenuTegasMobile({ grup, onNavigate }) {
   )
 }
 
-// Tab bottom nav mobile untuk satu aspek — dipakai untuk kelompok kiri maupun kanan.
+// Tab bottom nav mobile untuk satu aspek — sekarang dipakai dalam satu baris rata untuk
+// kelima aspek sekaligus (flex-1 di semua item, lebar otomatis sama rata).
 function TabAspekMobile({ grup, pathname }) {
   const Icon = grup.icon
   const aktif = grupAktif(grup, pathname)
   return (
     <NavLink
       to={grup.items[0].path}
-      className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl text-[9.5px] font-medium leading-tight min-w-0"
+      className="flex-1 flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl text-[10px] font-medium leading-tight min-w-0"
     >
       <span className={`relative p-1.5 rounded-full transition-colors duration-150 ${aktif ? "bg-blue-50 dark:bg-blue-950" : ""}`}>
         {aktif && (
@@ -460,7 +459,7 @@ function Sidebar() {
         </div>
       </div>
 
-      {/* ===== MOBILE TOP BAR (di bawah md) — sekarang punya tombol "Menu" di kanan ===== */}
+      {/* ===== MOBILE TOP BAR (di bawah md) — tombol "Menu" di kanan ===== */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-b-2 border-blue-500 px-4 py-3 flex items-center justify-between transition-colors">
         <div className="flex items-center gap-2">
           <div className="bg-white rounded-full p-1 flex items-center justify-center shadow-sm">
@@ -503,38 +502,24 @@ function Sidebar() {
       )}
 
       {/* ===== MOBILE BOTTOM NAVIGATION BAR ===== */}
-      {/* Sekarang menampilkan SEMUA 5 aspek (3 kiri, 2 kanan), tombol "+" Input SPIP tetap
-          presisi di tengah karena diapit dua kelompok flex-1 yang lebarnya sama. Tombol
-          "Menu" sudah pindah ke top bar, jadi tidak ada lagi di baris ini. */}
+      {/* Kelima aspek dalam SATU baris rata (flex-1 semua, lebar otomatis sama persis).
+          Tombol "+" Input SPIP MELAYANG DI ATAS (absolute, tidak makan slot horizontal),
+          jadi tidak ada lagi sisi yang lebih sempit dari sisi lain. */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
-        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-1 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+        <div className="relative bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-1 pt-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
           <div className="flex items-center">
-            {/* Kelompok kiri: 3 aspek pertama */}
-            <div className="flex-1 flex items-center justify-around min-w-0">
-              {ASPEK_TAB_MOBILE_KIRI.map((grup) => (
-                <TabAspekMobile key={grup.key} grup={grup} pathname={location.pathname} />
-              ))}
-            </div>
-
-            {/* Tombol "+" Input SPIP — inline di tengah, presisi karena dua kelompok
-                di kiri-kanan sama-sama flex-1 */}
-            <div className="w-14 flex-shrink-0 flex items-center justify-center">
-              <button
-                onClick={() => navigate('/input')}
-                aria-label="Input SPIP"
-                className="w-11 h-11 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-md active:scale-95 transition-transform"
-              >
-                <Plus size={20} />
-              </button>
-            </div>
-
-            {/* Kelompok kanan: 2 aspek terakhir */}
-            <div className="flex-1 flex items-center justify-around min-w-0">
-              {ASPEK_TAB_MOBILE_KANAN.map((grup) => (
-                <TabAspekMobile key={grup.key} grup={grup} pathname={location.pathname} />
-              ))}
-            </div>
+            {ASPEK_TAB_MOBILE.map((grup) => (
+              <TabAspekMobile key={grup.key} grup={grup} pathname={location.pathname} />
+            ))}
           </div>
+
+          <button
+            onClick={() => navigate('/input')}
+            aria-label="Input SPIP"
+            className="absolute left-1/2 -translate-x-1/2 -top-4 w-14 h-14 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+          >
+            <Plus size={26} />
+          </button>
         </div>
       </div>
 
