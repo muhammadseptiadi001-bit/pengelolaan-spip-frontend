@@ -5,15 +5,40 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
-const Dashboard = lazy(() => import('./pages/Dashboard'))
-const InputData = lazy(() => import('./pages/InputData'))
-const DataSPIP = lazy(() => import('./pages/DataSPIP'))
-const Riwayat = lazy(() => import('./pages/Riwayat'))
-const Evaluasi = lazy(() => import('./pages/Evaluasi'))
-const Pemeliharaan = lazy(() => import('./pages/Pemeliharaan'))
-const PengamananInstalasi = lazy(() => import('./pages/PengamananInstalasi'))
-const KompetensiTeknik = lazy(() => import('./pages/KompetensiTeknik'))
-const KajianTeknis = lazy(() => import('./pages/KajianTeknis'))
+// Pembungkus khusus untuk React.lazy(): kalau import gagal karena file chunk lama
+// sudah tidak ada di server (biasanya karena ada deploy baru sementara tab ini masih
+// terbuka), otomatis reload halaman SATU KALI supaya browser ambil daftar chunk
+// terbaru. Pakai sessionStorage sebagai penanda supaya tidak reload berulang-ulang
+// kalau ternyata errornya bukan soal chunk basi (mencegah infinite reload loop).
+function lazyDenganAutoReload(fungsiImport) {
+  return lazy(() =>
+    fungsiImport().catch((error) => {
+      const kunciPenanda = 'spip-sudah-reload-karena-chunk-error'
+      const sudahPernahReload = sessionStorage.getItem(kunciPenanda)
+
+      if (!sudahPernahReload) {
+        sessionStorage.setItem(kunciPenanda, '1')
+        window.location.reload()
+        // Promise sengaja tidak pernah resolve/reject karena halaman akan reload
+        return new Promise(() => {})
+      }
+
+      // Sudah pernah dicoba reload sekali tapi tetap gagal — berarti errornya
+      // bukan soal chunk basi, lempar error aslinya supaya tidak diam-diam gagal.
+      throw error
+    })
+  )
+}
+
+const Dashboard = lazyDenganAutoReload(() => import('./pages/Dashboard'))
+const InputData = lazyDenganAutoReload(() => import('./pages/InputData'))
+const DataSPIP = lazyDenganAutoReload(() => import('./pages/DataSPIP'))
+const Riwayat = lazyDenganAutoReload(() => import('./pages/Riwayat'))
+const Evaluasi = lazyDenganAutoReload(() => import('./pages/Evaluasi'))
+const Pemeliharaan = lazyDenganAutoReload(() => import('./pages/Pemeliharaan'))
+const PengamananInstalasi = lazyDenganAutoReload(() => import('./pages/PengamananInstalasi'))
+const KompetensiTeknik = lazyDenganAutoReload(() => import('./pages/KompetensiTeknik'))
+const KajianTeknis = lazyDenganAutoReload(() => import('./pages/KajianTeknis'))
 
 function LoadingHalaman() {
   return (
