@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { simpanLogin } from '../utils/auth'
-import logoSicool from '../assets/logo-sicool.png'
+import logoEsdm from '../assets/logo-esdm.png'
 
 const TUGAS_KO = [
   "Sistem dan pelaksanaan pemeliharaan/perawatan sarana, prasarana, instalasi, dan peralatan pertambangan",
@@ -71,13 +72,26 @@ function Login() {
         </svg>
 
         <div className="relative z-10 flex flex-col items-center text-center mt-2 md:mt-4">
-          <div className="bg-white rounded-full p-4 md:p-5 shadow-xl">
-            <img
-              src={logoSicool}
-              alt="Logo SICOOL"
-              className="w-28 h-28 md:w-36 md:h-36 object-contain"
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: -12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="relative"
+          >
+            {/* Glow lembut berdenyut di belakang logo */}
+            <motion.div
+              animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.1, 1] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -inset-3 rounded-full bg-gradient-to-r from-[#F2A93B] via-[#5FA8D3] to-[#F2A93B] blur-xl"
             />
-          </div>
+            <div className="relative bg-white rounded-full p-4 md:p-5 shadow-xl">
+              <img
+                src={logoEsdm}
+                alt="Logo Kementerian ESDM"
+                className="w-28 h-28 md:w-36 md:h-36 object-contain"
+              />
+            </div>
+          </motion.div>
           <h1 className="font-display text-white text-2xl md:text-3xl font-extrabold mt-5">
             Pengelolaan SPIP
           </h1>

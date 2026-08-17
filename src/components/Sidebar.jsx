@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import { ambilUser, logout } from '../utils/auth'
 import { ambilTema, toggleTema } from '../utils/theme'
-import logoSicool from '../assets/logo-sicool.png'
+import logoEsdm from '../assets/logo-esdm.png'
 
 // ===== STRUKTUR MENU BERDASARKAN 5 ASPEK TUGAS & TANGGUNG JAWAB KO =====
 // Semua 5 aspek AKTIF. Aspek dengan HANYA 1 sub-halaman dirender sebagai link langsung
@@ -405,9 +405,18 @@ function Sidebar() {
       {/* ===== DESKTOP SIDEBAR (md ke atas) ===== */}
       <div className="hidden md:flex w-64 bg-white dark:bg-gray-900 min-h-screen p-4 flex-shrink-0 flex-col border-r-2 border-blue-500 sticky top-0 h-screen transition-colors overflow-y-auto">
         <div className="flex flex-col items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="bg-white rounded-full p-2 mb-2 shadow-sm">
-            <img src={logoSicool} alt="Logo SICOOL" className="w-40 h-40 object-contain" />
-          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="relative mb-2"
+          >
+            <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-amber-400/30 via-blue-400/20 to-amber-400/30 blur-lg" />
+            <div className="relative bg-white rounded-full p-2 shadow-sm">
+              <img src={logoEsdm} alt="Logo Kementerian ESDM" className="w-40 h-40 object-contain" />
+            </div>
+          </motion.div>
           <h1 className="text-gray-900 dark:text-white text-sm font-bold text-center">Pengelolaan SPIP</h1>
         </div>
 
@@ -460,7 +469,7 @@ function Sidebar() {
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-b-2 border-blue-500 px-4 py-3 flex items-center justify-between transition-colors">
         <div className="flex items-center gap-2">
           <div className="bg-white rounded-full p-1 flex items-center justify-center shadow-sm">
-            <img src={logoSicool} alt="Logo SICOOL" className="w-6 h-6 object-contain" />
+            <img src={logoEsdm} alt="Logo Kementerian ESDM" className="w-6 h-6 object-contain" />
           </div>
           <span className="text-gray-900 dark:text-white text-sm font-bold">Pengelolaan SPIP</span>
         </div>
