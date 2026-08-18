@@ -105,7 +105,21 @@ function InputData() {
     try {
       const res = await apiFetch(API_URL)
       const data = await res.json()
-      setDaftarNomorUnitAda(data.map((unit) => unit.nomorUnit?.toLowerCase().trim()))
+
+      let daftar = []
+      if (Array.isArray(data)) {
+        daftar = data
+      } else if (Array.isArray(data?.data)) {
+        daftar = data.data
+      } else if (Array.isArray(data?.items)) {
+        daftar = data.items
+      } else if (Array.isArray(data?.result)) {
+        daftar = data.result
+      } else {
+        console.warn('Bentuk response tidak dikenali:', data)
+      }
+
+      setDaftarNomorUnitAda(daftar.map((unit) => unit.nomorUnit?.toLowerCase().trim()))
     } catch (err) {
       console.error(err)
     }
