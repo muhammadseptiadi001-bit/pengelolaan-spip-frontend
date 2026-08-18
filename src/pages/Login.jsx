@@ -17,6 +17,7 @@ function Login() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [logoKlik, setLogoKlik] = useState(false)
   const navigate = useNavigate()
 
   async function handleLogin(e) {
@@ -72,26 +73,32 @@ function Login() {
         </svg>
 
         <div className="relative z-10 flex flex-col items-center text-center mt-2 md:mt-4">
-          <motion.div
+          <motion.button
+            type="button"
+            onClick={() => setLogoKlik(true)}
             initial={{ opacity: 0, scale: 0.85, y: -12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
+            whileTap={{ scale: 0.94 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="relative"
+            className="relative cursor-pointer"
+            aria-label="Logo Kementerian ESDM"
           >
-            {/* Glow lembut berdenyut di belakang logo */}
+            {/* Glow kuning — hanya muncul sesaat saat logo diklik */}
             <motion.div
-              animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.1, 1] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -inset-3 rounded-full bg-gradient-to-r from-[#F2A93B] via-[#5FA8D3] to-[#F2A93B] blur-xl"
+              initial={{ opacity: 0 }}
+              animate={logoKlik ? { opacity: [0, 0.85, 0], scale: [1, 1.2, 1] } : { opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              onAnimationComplete={() => setLogoKlik(false)}
+              className="absolute -inset-3 rounded-full bg-gradient-to-r from-[#F2A93B] via-[#F7D774] to-[#F2A93B] blur-xl pointer-events-none"
             />
-            <div className="relative bg-white rounded-full p-4 md:p-5 shadow-xl">
+            <div className="relative bg-[#0B1E33] rounded-full p-4 md:p-5 shadow-xl ring-2 ring-white/10">
               <img
                 src={logoEsdm}
                 alt="Logo Kementerian ESDM"
                 className="w-28 h-28 md:w-36 md:h-36 object-contain"
               />
             </div>
-          </motion.div>
+          </motion.button>
           <h1 className="font-display text-white text-2xl md:text-3xl font-extrabold mt-5">
             Pengelolaan SPIP
           </h1>

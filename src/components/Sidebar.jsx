@@ -34,13 +34,6 @@ import logoEsdm from '../assets/logo-esdm.png'
 // BAWAH — supaya tidak menutupi tab pertama (Pemeliharaan), bar diberi padding-kiri
 // (pl-16) sebagai "ruang khusus" untuk FAB, dan kelima tab digeser mulai setelah ruang
 // itu. FAB sendiri absolute di pojok kiri, terangkat di atas garis bar (-top-4).
-//
-// REVISI VISUAL (redesign): tampilan disamakan dengan identitas warna halaman Login
-// (navy #0B1E33 + emas #F2A93B + biru #3B82C4). Setiap aspek diberi warna aksen
-// berbeda (chip ikon & badge nomor regulasi) supaya menu tidak terasa monoton/kaku,
-// indikator aktif memakai gradient navy + garis aksen emas, dan ditambah animasi
-// halus (glow logo berdenyut, ring FAB berdenyut, hover lift). Struktur & logic
-// TIDAK berubah sama sekali dari versi sebelumnya.
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 
@@ -115,20 +108,6 @@ const URUTAN_ASPEK_DESKTOP = [
 // Kelima aspek tampil di bottom nav mobile, dalam satu baris rata.
 const ASPEK_TAB_MOBILE = [GRUP_PEMELIHARAAN, GRUP_PENGAMANAN, GRUP_KELAYAKAN, GRUP_KOMPETENSI, GRUP_KAJIAN_TEKNIS]
 
-// ===== TOKEN WARNA (redesign) =====
-// Aksen berbeda per aspek supaya menu terasa lebih hidup & mudah dibedakan sekilas,
-// tanpa mengubah identitas utama (navy + emas) yang dipakai di halaman Login.
-const AKSEN = {
-  aspek1: { chip: "bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400", badge: "bg-gradient-to-br from-teal-400 to-teal-600" },
-  aspek2: { chip: "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400", badge: "bg-gradient-to-br from-rose-400 to-rose-600" },
-  aspek3: { chip: "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400", badge: "bg-gradient-to-br from-amber-400 to-amber-600" },
-  aspek4: { chip: "bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400", badge: "bg-gradient-to-br from-purple-400 to-purple-600" },
-  aspek5: { chip: "bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400", badge: "bg-gradient-to-br from-sky-400 to-sky-600" },
-}
-
-// Gradient navy khas Login, dipakai untuk semua state "aktif" supaya identitas warna konsisten.
-const AKTIF_GRADIENT = "bg-gradient-to-r from-[#0B1E33] to-[#1B3A5C] shadow-md shadow-[#0B1E33]/25"
-
 function itemAktif(item, pathname) {
   return item.end ? pathname === item.path : pathname.startsWith(item.path)
 }
@@ -150,12 +129,12 @@ function ItemMenu({ item, indent = false, onNavigate }) {
       end={item.end}
       onClick={onNavigate}
       className={({ isActive }) =>
-        `relative flex items-center gap-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+        `relative flex items-center gap-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
           indent ? "pl-4 pr-3" : "px-3"
         } ${
           isActive
             ? "text-white"
-            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 hover:translate-x-0.5"
+            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400"
         }`
       }
     >
@@ -164,11 +143,9 @@ function ItemMenu({ item, indent = false, onNavigate }) {
           {isActive && (
             <motion.div
               layoutId="indikator-aktif-desktop"
-              className={`absolute inset-0 rounded-xl -z-10 ${AKTIF_GRADIENT}`}
+              className="absolute inset-0 bg-blue-600 rounded-lg -z-10"
               transition={{ type: "spring", stiffness: 500, damping: 35 }}
-            >
-              <span className="absolute right-0 top-0 bottom-0 w-1 rounded-r-xl bg-[#F2A93B]" />
-            </motion.div>
+            />
           )}
           <Icon size={16} className="flex-shrink-0" />
           {item.label}
@@ -178,16 +155,13 @@ function ItemMenu({ item, indent = false, onNavigate }) {
   )
 }
 
-// Kop nomor regulasi (mis. "4.4.3"). Sekarang ditampilkan sebagai pill bergradasi warna
-// aksen aspek — saat item aktif, pill jadi putih transparan supaya kontras di atas navy.
-function NomorRegulasi({ nomor, aktif = false, badgeClass = "bg-gradient-to-br from-blue-400 to-blue-600", size = "text-[10px]" }) {
+// Kop nomor regulasi (mis. "4.4.3"). Saat item aktif dengan background solid biru,
+// dipakai warna terang (text-blue-100) supaya tetap terbaca; kalau tidak aktif, warna
+// aksen biru seperti biasa.
+function NomorRegulasi({ nomor, aktif = false, size = "text-xs" }) {
   if (!nomor) return null
   return (
-    <span
-      className={`inline-block ${size} font-bold tracking-wide leading-none mb-1 px-1.5 py-0.5 rounded-full text-white ${
-        aktif ? "bg-white/20" : badgeClass
-      }`}
-    >
+    <span className={`block ${size} font-bold tracking-wide leading-none mb-1 ${aktif ? "text-blue-100" : "text-blue-600 dark:text-blue-400"}`}>
       {nomor}
     </span>
   )
@@ -196,27 +170,24 @@ function NomorRegulasi({ nomor, aktif = false, badgeClass = "bg-gradient-to-br f
 function GrupMenuDesktop({ grup, terbuka, onToggle, pathname }) {
   const Icon = grup.icon
   const adaAktif = grupAktif(grup, pathname)
-  const aksen = AKSEN[grup.key]
 
   return (
     <div>
       <button
         type="button"
         onClick={onToggle}
-        className={`w-full flex items-start justify-between gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-          adaAktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+        className={`w-full flex items-start justify-between gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
+          adaAktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
         }`}
       >
-        <span className="flex items-start gap-2.5 text-left">
-          <span className={`flex-shrink-0 mt-0.5 p-1.5 rounded-lg ${aksen.chip}`}>
-            <Icon size={14} />
-          </span>
+        <span className="flex items-start gap-2 text-left">
+          <Icon size={16} className="flex-shrink-0 mt-0.5" />
           <span>
-            <NomorRegulasi nomor={grup.nomor} badgeClass={aksen.badge} />
+            <NomorRegulasi nomor={grup.nomor} />
             <span className="block">{grup.label}</span>
           </span>
         </span>
-        <ChevronDown size={14} className={`flex-shrink-0 mt-2 transition-transform duration-200 ${terbuka ? "rotate-180" : ""}`} />
+        <ChevronDown size={14} className={`flex-shrink-0 mt-0.5 transition-transform ${terbuka ? "rotate-180" : ""}`} />
       </button>
 
       <AnimatePresence initial={false}>
@@ -241,20 +212,19 @@ function GrupMenuDesktop({ grup, terbuka, onToggle, pathname }) {
 }
 
 // ===== VERSI "TEGAS": untuk aspek yang cuma punya 1 sub-halaman. Link langsung, tanpa
-// panah/expand, dengan highlight gradient navy + garis aksen emas saat aktif. =====
+// panah/expand, dengan highlight background solid biru penuh saat aktif. =====
 function ItemMenuTegas({ grup }) {
   const item = grup.items[0]
   const Icon = grup.icon
-  const aksen = AKSEN[grup.key]
   return (
     <NavLink
       to={item.path}
       end={item.end}
       className={({ isActive }) =>
-        `relative flex items-start gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+        `relative flex items-start gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors duration-150 ${
           isActive
             ? "text-white"
-            : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 hover:translate-x-0.5"
+            : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400"
         }`
       }
     >
@@ -263,17 +233,13 @@ function ItemMenuTegas({ grup }) {
           {isActive && (
             <motion.div
               layoutId="indikator-aktif-desktop"
-              className={`absolute inset-0 rounded-xl -z-10 ${AKTIF_GRADIENT}`}
+              className="absolute inset-0 bg-blue-600 rounded-lg -z-10"
               transition={{ type: "spring", stiffness: 500, damping: 35 }}
-            >
-              <span className="absolute right-0 top-0 bottom-0 w-1 rounded-r-xl bg-[#F2A93B]" />
-            </motion.div>
+            />
           )}
-          <span className={`flex-shrink-0 mt-0.5 p-1.5 rounded-lg ${isActive ? "bg-white/15" : aksen.chip}`}>
-            <Icon size={14} className={isActive ? "text-white" : ""} />
-          </span>
+          <Icon size={16} className="flex-shrink-0 mt-0.5" />
           <span>
-            <NomorRegulasi nomor={grup.nomor} aktif={isActive} badgeClass={aksen.badge} />
+            <NomorRegulasi nomor={grup.nomor} aktif={isActive} />
             <span className="block">{grup.label}</span>
           </span>
         </>
@@ -286,27 +252,24 @@ function ItemMenuTegas({ grup }) {
 function GrupMenuMobile({ grup, terbuka, onToggle, pathname, onNavigate }) {
   const Icon = grup.icon
   const adaAktif = grupAktif(grup, pathname)
-  const aksen = AKSEN[grup.key]
 
   return (
     <div className="mb-1">
       <button
         type="button"
         onClick={onToggle}
-        className={`w-full flex items-start justify-between gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+        className={`w-full flex items-start justify-between gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition ${
           adaAktif ? "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30" : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
         }`}
       >
-        <span className="flex items-start gap-2.5 text-left">
-          <span className={`flex-shrink-0 mt-0.5 p-1.5 rounded-lg ${aksen.chip}`}>
-            <Icon size={14} />
-          </span>
+        <span className="flex items-start gap-2 text-left">
+          <Icon size={16} className="flex-shrink-0 mt-0.5" />
           <span>
-            <NomorRegulasi nomor={grup.nomor} badgeClass={aksen.badge} />
+            <NomorRegulasi nomor={grup.nomor} />
             <span className="block">{grup.label}</span>
           </span>
         </span>
-        <ChevronDown size={14} className={`flex-shrink-0 mt-2 transition-transform duration-200 ${terbuka ? "rotate-180" : ""}`} />
+        <ChevronDown size={14} className={`flex-shrink-0 mt-0.5 transition-transform ${terbuka ? "rotate-180" : ""}`} />
       </button>
 
       <AnimatePresence initial={false}>
@@ -328,20 +291,15 @@ function GrupMenuMobile({ grup, terbuka, onToggle, pathname, onNavigate }) {
                     end={item.end}
                     onClick={onNavigate}
                     className={({ isActive }) =>
-                      `relative flex items-center gap-3 pl-4 pr-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      `flex items-center gap-3 pl-4 pr-3 py-2 rounded-lg text-sm font-medium transition ${
                         isActive
-                          ? `text-white ${AKTIF_GRADIENT}`
+                          ? "bg-blue-600 text-white"
                           : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                       }`
                     }
                   >
-                    {({ isActive }) => (
-                      <>
-                        {isActive && <span className="absolute right-0 top-0 bottom-0 w-1 rounded-r-xl bg-[#F2A93B]" />}
-                        <ItemIcon size={16} />
-                        {item.label}
-                      </>
-                    )}
+                    <ItemIcon size={16} />
+                    {item.label}
                   </NavLink>
                 )
               })}
@@ -357,28 +315,24 @@ function GrupMenuMobile({ grup, terbuka, onToggle, pathname, onNavigate }) {
 function ItemMenuTegasMobile({ grup, onNavigate }) {
   const item = grup.items[0]
   const Icon = grup.icon
-  const aksen = AKSEN[grup.key]
   return (
     <NavLink
       to={item.path}
       end={item.end}
       onClick={onNavigate}
       className={({ isActive }) =>
-        `relative flex items-start gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 mb-1 ${
+        `flex items-start gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition mb-1 ${
           isActive
-            ? `text-white ${AKTIF_GRADIENT}`
+            ? "bg-blue-600 text-white"
             : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
         }`
       }
     >
       {({ isActive }) => (
         <>
-          {isActive && <span className="absolute right-0 top-0 bottom-0 w-1 rounded-r-xl bg-[#F2A93B]" />}
-          <span className={`flex-shrink-0 mt-0.5 p-1.5 rounded-lg ${isActive ? "bg-white/15" : aksen.chip}`}>
-            <Icon size={14} className={isActive ? "text-white" : ""} />
-          </span>
+          <Icon size={16} className="flex-shrink-0 mt-0.5" />
           <span>
-            <NomorRegulasi nomor={grup.nomor} aktif={isActive} badgeClass={aksen.badge} />
+            <NomorRegulasi nomor={grup.nomor} aktif={isActive} />
             <span className="block">{grup.label}</span>
           </span>
         </>
@@ -391,23 +345,22 @@ function ItemMenuTegasMobile({ grup, onNavigate }) {
 function TabAspekMobile({ grup, pathname }) {
   const Icon = grup.icon
   const aktif = grupAktif(grup, pathname)
-  const aksen = AKSEN[grup.key]
   return (
     <NavLink
       to={grup.items[0].path}
       className="flex-1 flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl text-[10px] font-medium leading-tight min-w-0"
     >
-      <motion.span whileTap={{ scale: 0.88 }} className={`relative p-1.5 rounded-full transition-colors duration-200 ${aktif ? aksen.chip : ""}`}>
+      <span className={`relative p-1.5 rounded-full transition-colors duration-150 ${aktif ? "bg-blue-50 dark:bg-blue-950" : ""}`}>
         {aktif && (
           <motion.div
             layoutId="indikator-aktif-mobile"
-            className={`absolute inset-0 rounded-full -z-10 ${aksen.chip}`}
+            className="absolute inset-0 rounded-full bg-blue-50 dark:bg-blue-950 -z-10"
             transition={{ type: "spring", stiffness: 500, damping: 35 }}
           />
         )}
-        <Icon size={18} className={aktif ? aksen.chip.match(/text-\S+/g)?.join(" ") : "text-gray-500 dark:text-gray-400"} />
-      </motion.span>
-      <span className={`text-center truncate w-full ${aktif ? aksen.chip.match(/text-\S+/g)?.join(" ") : "text-gray-500 dark:text-gray-400"}`}>
+        <Icon size={18} className={aktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"} />
+      </span>
+      <span className={`text-center truncate w-full ${aktif ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"}`}>
         {grup.labelTab}
       </span>
     </NavLink>
@@ -422,6 +375,8 @@ function Sidebar() {
   const [menuTerbuka, setMenuTerbuka] = useState(false)
   const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true })
   const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true })
+  const [logoKlikDesktop, setLogoKlikDesktop] = useState(false)
+  const [logoKlikMobile, setLogoKlikMobile] = useState(false)
 
   function toggleGrup(key) {
     setGrupTerbuka((sebelumnya) => ({ ...sebelumnya, [key]: !sebelumnya[key] }))
@@ -450,54 +405,40 @@ function Sidebar() {
   return (
     <>
       {/* ===== DESKTOP SIDEBAR (md ke atas) ===== */}
-      <div className="hidden md:flex relative w-64 bg-white dark:bg-gray-900 min-h-screen p-4 flex-shrink-0 flex-col sticky top-0 h-screen transition-colors overflow-y-auto">
-        {/* garis aksen gradient di tepi kanan, menggantikan border solid biru */}
-        <div className="absolute top-0 right-0 w-[3px] h-full bg-gradient-to-b from-[#F2A93B] via-[#3B82C4] to-[#0B1E33]" />
-
+      <div className="hidden md:flex w-64 bg-white dark:bg-gray-900 min-h-screen p-4 flex-shrink-0 flex-col border-r-2 border-blue-500 sticky top-0 h-screen transition-colors overflow-y-auto">
         <div className="flex flex-col items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-          <motion.div
+          <motion.button
+            type="button"
+            onClick={() => setLogoKlikDesktop(true)}
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.94 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="relative mb-2"
+            className="relative mb-2 cursor-pointer"
+            aria-label="Logo Kementerian ESDM"
           >
             <motion.div
-              animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.12, 1] }}
-              transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -inset-2 rounded-full bg-gradient-to-r from-amber-400/40 via-blue-400/25 to-amber-400/40 blur-lg"
+              initial={{ opacity: 0 }}
+              animate={logoKlikDesktop ? { opacity: [0, 0.85, 0], scale: [1, 1.2, 1] } : { opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              onAnimationComplete={() => setLogoKlikDesktop(false)}
+              className="absolute -inset-3 rounded-full bg-gradient-to-r from-[#F2A93B] via-[#F7D774] to-[#F2A93B] blur-xl pointer-events-none"
             />
-            <div className="relative bg-white rounded-full p-2 shadow-md">
+            <div className="relative bg-[#0B1E33] rounded-full p-2 shadow-sm ring-2 ring-white/10">
               <img src={logoEsdm} alt="Logo Kementerian ESDM" className="w-40 h-40 object-contain" />
             </div>
-          </motion.div>
+          </motion.button>
           <h1 className="text-gray-900 dark:text-white text-sm font-bold text-center">Pengelolaan SPIP</h1>
-          <div className="w-14 h-[3px] rounded-full mt-2 bg-gradient-to-r from-[#3B82C4] via-[#5FA8D3] to-[#F2A93B]" />
         </div>
 
         <nav className="flex flex-col gap-1.5 flex-1">
-          <NavLink
-            to={MENU_TUNGGAL.path}
-            className={({ isActive }) =>
-              `relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                isActive
-                  ? "text-white shadow-md shadow-[#F2A93B]/25 bg-gradient-to-r from-[#F2A93B] to-[#E0932A]"
-                  : "text-[#0B1E33] dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50 hover:translate-x-0.5"
-              }`
-            }
-          >
-            <FilePlus size={16} className="flex-shrink-0" />
-            {MENU_TUNGGAL.label}
-          </NavLink>
+          <ItemMenu item={MENU_TUNGGAL} />
 
           <div className="h-px bg-gray-200 dark:bg-gray-800 my-2"></div>
 
           {URUTAN_ASPEK_DESKTOP.map((entri, idx) => (
-            <motion.div
+            <div
               key={entri.data.key}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: idx * 0.05 }}
               className={idx > 0 ? "pt-2 mt-1 border-t border-gray-100 dark:border-gray-800" : ""}
             >
               {entri.data.items.length > 1 ? (
@@ -510,14 +451,14 @@ function Sidebar() {
               ) : (
                 <ItemMenuTegas grup={entri.data} />
               )}
-            </motion.div>
+            </div>
           ))}
         </nav>
 
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
           <button
             onClick={handleToggleTema}
-            className="w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 mb-2 flex items-center gap-2 transition-colors duration-200"
+            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 mb-2 flex items-center gap-2"
           >
             {tema === "light" ? <Moon size={16} /> : <Sun size={16} />}
             {tema === "light" ? "Mode Gelap" : "Mode Terang"}
@@ -528,7 +469,7 @@ function Sidebar() {
           </p>
           <button
             onClick={handleLogout}
-            className="w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-red-500 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2 transition-colors duration-200"
+            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-500 dark:text-red-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
           >
             <LogOut size={16} /> Logout
           </button>
@@ -536,12 +477,26 @@ function Sidebar() {
       </div>
 
       {/* ===== MOBILE TOP BAR (di bawah md) — tombol "Menu" di kanan ===== */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 px-4 py-3 flex items-center justify-between transition-colors">
-        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#F2A93B] via-[#3B82C4] to-[#0B1E33]" />
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-b-2 border-blue-500 px-4 py-3 flex items-center justify-between transition-colors">
         <div className="flex items-center gap-2">
-          <div className="bg-white rounded-full p-1 flex items-center justify-center shadow-sm">
-            <img src={logoEsdm} alt="Logo Kementerian ESDM" className="w-6 h-6 object-contain" />
-          </div>
+          <motion.button
+            type="button"
+            onClick={() => setLogoKlikMobile(true)}
+            whileTap={{ scale: 0.9 }}
+            className="relative flex items-center justify-center cursor-pointer"
+            aria-label="Logo Kementerian ESDM"
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={logoKlikMobile ? { opacity: [0, 0.9, 0], scale: [1, 1.4, 1] } : { opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              onAnimationComplete={() => setLogoKlikMobile(false)}
+              className="absolute -inset-2 rounded-full bg-gradient-to-r from-[#F2A93B] via-[#F7D774] to-[#F2A93B] blur-md pointer-events-none"
+            />
+            <div className="relative bg-[#0B1E33] rounded-full p-1 flex items-center justify-center shadow-sm ring-1 ring-white/10">
+              <img src={logoEsdm} alt="Logo Kementerian ESDM" className="w-6 h-6 object-contain" />
+            </div>
+          </motion.button>
           <span className="text-gray-900 dark:text-white text-sm font-bold">Pengelolaan SPIP</span>
         </div>
 
@@ -564,9 +519,9 @@ function Sidebar() {
                 to={item.path}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  `flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${
                     isActive
-                      ? `text-white ${AKTIF_GRADIENT}`
+                      ? "bg-blue-600 text-white"
                       : "text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800"
                   }`
                 }
@@ -593,16 +548,9 @@ function Sidebar() {
           <button
             onClick={() => navigate('/input')}
             aria-label="Input SPIP"
-            className="absolute left-2 -top-4 w-14 h-14 rounded-full flex items-center justify-center"
+            className="absolute left-2 -top-4 w-14 h-14 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"
           >
-            <motion.span
-              animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute inset-0 rounded-full bg-[#F2A93B]/40"
-            />
-            <span className="relative w-14 h-14 rounded-full bg-gradient-to-br from-[#0B1E33] to-[#1B3A5C] text-white flex items-center justify-center shadow-lg shadow-[#0B1E33]/40 active:scale-95 transition-transform ring-2 ring-[#F2A93B]">
-              <Plus size={26} />
-            </span>
+            <Plus size={26} />
           </button>
         </div>
       </div>
@@ -633,20 +581,7 @@ function Sidebar() {
                 </button>
               </div>
 
-              <NavLink
-                to={MENU_TUNGGAL.path}
-                onClick={tutupMenu}
-                className={({ isActive }) =>
-                  `relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                    isActive
-                      ? "text-white shadow-md shadow-[#F2A93B]/25 bg-gradient-to-r from-[#F2A93B] to-[#E0932A]"
-                      : "text-[#0B1E33] dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30"
-                  }`
-                }
-              >
-                <FilePlus size={16} className="flex-shrink-0" />
-                {MENU_TUNGGAL.label}
-              </NavLink>
+              <ItemMenu item={MENU_TUNGGAL} onNavigate={tutupMenu} />
 
               <div className="h-px bg-gray-200 dark:bg-gray-800 my-3"></div>
 
@@ -673,7 +608,7 @@ function Sidebar() {
 
               <button
                 onClick={handleToggleTema}
-                className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 mb-1 flex items-center gap-2 transition-colors duration-200"
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 mb-1 flex items-center gap-2"
               >
                 {tema === "light" ? <Moon size={16} /> : <Sun size={16} />}
                 {tema === "light" ? "Mode Gelap" : "Mode Terang"}
@@ -685,7 +620,7 @@ function Sidebar() {
 
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2 transition-colors duration-200"
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 dark:text-red-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
               >
                 <LogOut size={16} /> Logout
               </button>
