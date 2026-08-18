@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, PieChart, Pie, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, LabelList } from 'recharts'
-import { Boxes, CheckCircle2, AlertTriangle, XCircle, Send } from 'lucide-react'
+import { Boxes, CheckCircle2, AlertTriangle, XCircle, Send, ShieldCheck, Clock, BarChart3 } from 'lucide-react'
 import { API_URL, PILIHAN_JENIS_SPIP, hitungJatuhTempo, hitungStatusWaktu } from '../utils/spipHelpers'
 import { apiFetch } from '../utils/apiFetch'
 
@@ -59,6 +59,14 @@ function TooltipModern({ active, payload, label }) {
       <p className="text-sm font-bold" style={{ color: payload[0].payload.fill || payload[0].color || "#3b82f6" }}>
         {payload[0].value} unit
       </p>
+    </div>
+  )
+}
+
+function IkonHeaderGrafik({ Icon, gradasi }) {
+  return (
+    <div className={`p-2 rounded-xl bg-gradient-to-br ${gradasi} shadow-md`}>
+      <Icon size={16} className="text-white" />
     </div>
   )
 }
@@ -185,9 +193,42 @@ function Dashboard() {
 
   const kartuRingkasan = [
     { label: "Total Unit", nilai: ringkasan.total, icon: Boxes, hero: true },
-    { label: "Aman", nilai: ringkasan.aman, icon: CheckCircle2, warna: "text-green-600 dark:text-green-400", bgIkon: "bg-gradient-to-br from-green-400 to-emerald-600" },
-    { label: "Mendekati Jatuh Tempo", nilai: ringkasan.mendekati, icon: AlertTriangle, warna: "text-amber-600 dark:text-amber-400", bgIkon: "bg-gradient-to-br from-amber-400 to-amber-600" },
-    { label: "Sudah Lewat", nilai: ringkasan.lewat, icon: XCircle, warna: "text-red-600 dark:text-red-400", bgIkon: "bg-gradient-to-br from-red-400 to-rose-600" },
+    {
+      label: "Aman",
+      nilai: ringkasan.aman,
+      icon: CheckCircle2,
+      soft: true,
+      bgKartu: "bg-green-50 dark:bg-green-950/40",
+      border: "border border-green-100 dark:border-green-900/60",
+      bgIkon: "bg-green-100 dark:bg-green-900/50",
+      warnaIkon: "text-green-600 dark:text-green-400",
+      warnaNilai: "text-green-700 dark:text-green-400",
+      warnaLabel: "text-green-700/70 dark:text-green-400/70"
+    },
+    {
+      label: "Mendekati Jatuh Tempo",
+      nilai: ringkasan.mendekati,
+      icon: AlertTriangle,
+      soft: true,
+      bgKartu: "bg-amber-50 dark:bg-amber-950/40",
+      border: "border border-amber-100 dark:border-amber-900/60",
+      bgIkon: "bg-amber-100 dark:bg-amber-900/50",
+      warnaIkon: "text-amber-600 dark:text-amber-400",
+      warnaNilai: "text-amber-700 dark:text-amber-400",
+      warnaLabel: "text-amber-700/70 dark:text-amber-400/70"
+    },
+    {
+      label: "Sudah Lewat",
+      nilai: ringkasan.lewat,
+      icon: XCircle,
+      soft: true,
+      bgKartu: "bg-red-50 dark:bg-red-950/40",
+      border: "border border-red-100 dark:border-red-900/60",
+      bgIkon: "bg-red-100 dark:bg-red-900/50",
+      warnaIkon: "text-red-600 dark:text-red-400",
+      warnaNilai: "text-red-700 dark:text-red-400",
+      warnaLabel: "text-red-700/70 dark:text-red-400/70"
+    },
   ]
 
   return (
@@ -292,17 +333,17 @@ function Dashboard() {
               <motion.div
                 key={kartu.label}
                 variants={varianKartu}
-                whileHover={{ scale: 1.03, boxShadow: "0px 12px 28px rgba(0,0,0,0.1)" }}
+                whileHover={{ scale: 1.03, boxShadow: "0px 12px 28px rgba(0,0,0,0.08)" }}
                 transition={{ duration: 0.2 }}
-                className="relative overflow-hidden bg-white dark:bg-gray-900 p-5 rounded-3xl shadow-sm dark:border dark:border-gray-800 flex flex-col justify-between"
+                className={`relative overflow-hidden ${kartu.bgKartu} ${kartu.border} p-5 rounded-3xl flex flex-col justify-between`}
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{kartu.label}</p>
-                  <div className={`p-2 rounded-xl ${kartu.bgIkon} shadow-md`}>
-                    <Icon size={16} className="text-white" />
+                  <p className={`text-sm ${kartu.warnaLabel}`}>{kartu.label}</p>
+                  <div className={`p-2 rounded-xl ${kartu.bgIkon}`}>
+                    <Icon size={16} className={kartu.warnaIkon} />
                   </div>
                 </div>
-                <p className={`text-3xl font-extrabold tracking-tight ${kartu.warna}`}>
+                <p className={`text-3xl font-extrabold tracking-tight ${kartu.warnaNilai}`}>
                   <AngkaCountUp nilai={kartu.nilai} />
                 </p>
               </motion.div>
@@ -327,7 +368,10 @@ function Dashboard() {
             className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm dark:border dark:border-gray-800"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Status Kelayakan</h2>
+              <div className="flex items-center gap-3">
+                <IkonHeaderGrafik Icon={ShieldCheck} gradasi="from-indigo-400 to-indigo-600" />
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Status Kelayakan</h2>
+              </div>
               <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
                 {dataStatusKelayakan.reduce((a, b) => a + b.jumlah, 0)} total
               </span>
@@ -364,7 +408,10 @@ function Dashboard() {
             className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm dark:border dark:border-gray-800"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Status Waktu Uji</h2>
+              <div className="flex items-center gap-3">
+                <IkonHeaderGrafik Icon={Clock} gradasi="from-amber-400 to-amber-600" />
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Status Waktu Uji</h2>
+              </div>
               <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
                 {totalStatusWaktu} total
               </span>
@@ -415,7 +462,10 @@ function Dashboard() {
             className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm dark:border dark:border-gray-800 md:col-span-2"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Jumlah Unit per Kategori SPIP</h2>
+              <div className="flex items-center gap-3">
+                <IkonHeaderGrafik Icon={BarChart3} gradasi="from-sky-400 to-sky-600" />
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Jumlah Unit per Kategori SPIP</h2>
+              </div>
               <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
                 {dataPerJenisSpip.reduce((a, b) => a + b.jumlah, 0)} total
               </span>

@@ -4,20 +4,20 @@ import ToastContainer from './ToastContainer'
 
 function Layout() {
   const location = useLocation()
-  // Saat berada di aspek dengan sub-tab (mis. Kelayakan SPIP), strip sub-tab mobile
-  // menambah ±44px tinggi di bawah top bar, jadi konten butuh padding-top ekstra
-  // supaya judul halaman tidak ketutup.
   const adaSubTab = Boolean(cariGrupUntukSubTab(location.pathname))
 
   return (
-    <div className="flex min-h-screen bg-gray-100 dark:bg-gray-950 transition-colors">
+    <div className="min-h-screen bg-[#f3f5f9] text-slate-900 transition-colors dark:bg-[#07111f] dark:text-white">
       <Sidebar />
       <ToastContainer />
-      <div
-        className={`flex-1 min-w-0 p-4 md:p-6 ${adaSubTab ? "pt-32" : "pt-20"} md:pt-6 pb-28 md:pb-6 overflow-x-auto w-full`}
+
+      <main
+        className={`min-w-0 md:ml-72 p-4 pb-28 pt-20 md:p-8 md:pt-8 ${
+          adaSubTab ? 'pt-32' : ''
+        }`}
       >
         <Outlet />
-      </div>
+      </main>
     </div>
   )
 }
