@@ -203,7 +203,8 @@ function Dashboard() {
       bgIkon: "bg-green-100 dark:bg-green-900/50",
       warnaIkon: "text-green-600 dark:text-green-400",
       warnaNilai: "text-green-700 dark:text-green-400",
-      warnaLabel: "text-green-700/70 dark:text-green-400/70"
+      warnaLabel: "text-green-700/70 dark:text-green-400/70",
+      warnaDekor: "bg-green-400/10"
     },
     {
       label: "Mendekati Jatuh Tempo",
@@ -215,7 +216,8 @@ function Dashboard() {
       bgIkon: "bg-amber-100 dark:bg-amber-900/50",
       warnaIkon: "text-amber-600 dark:text-amber-400",
       warnaNilai: "text-amber-700 dark:text-amber-400",
-      warnaLabel: "text-amber-700/70 dark:text-amber-400/70"
+      warnaLabel: "text-amber-700/70 dark:text-amber-400/70",
+      warnaDekor: "bg-amber-400/10"
     },
     {
       label: "Sudah Lewat",
@@ -227,7 +229,8 @@ function Dashboard() {
       bgIkon: "bg-red-100 dark:bg-red-900/50",
       warnaIkon: "text-red-600 dark:text-red-400",
       warnaNilai: "text-red-700 dark:text-red-400",
-      warnaLabel: "text-red-700/70 dark:text-red-400/70"
+      warnaLabel: "text-red-700/70 dark:text-red-400/70",
+      warnaDekor: "bg-red-400/10"
     },
   ]
 
@@ -337,13 +340,15 @@ function Dashboard() {
                 transition={{ duration: 0.2 }}
                 className={`relative overflow-hidden ${kartu.bgKartu} ${kartu.border} p-5 rounded-3xl flex flex-col justify-between`}
               >
-                <div className="flex items-center justify-between">
+                <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full ${kartu.warnaDekor}`}></div>
+                <div className={`absolute -right-2 top-8 w-14 h-14 rounded-full ${kartu.warnaDekor}`}></div>
+                <div className="flex items-center justify-between relative">
                   <p className={`text-sm ${kartu.warnaLabel}`}>{kartu.label}</p>
                   <div className={`p-2 rounded-xl ${kartu.bgIkon}`}>
                     <Icon size={16} className={kartu.warnaIkon} />
                   </div>
                 </div>
-                <p className={`text-3xl font-extrabold tracking-tight ${kartu.warnaNilai}`}>
+                <p className={`text-3xl font-extrabold tracking-tight relative ${kartu.warnaNilai}`}>
                   <AngkaCountUp nilai={kartu.nilai} />
                 </p>
               </motion.div>
