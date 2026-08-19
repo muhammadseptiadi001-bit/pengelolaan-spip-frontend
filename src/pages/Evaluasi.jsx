@@ -107,18 +107,18 @@ function AngkaCountUp({ nilai, durasi = 800 }) {
   return <>{tampil}</>
 }
 
-function KartuSkeleton() {
+function KartuSkeleton({ hero = false }) {
   return (
-    <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:border dark:border-gray-800 animate-pulse">
-      <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
-      <div className="h-7 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+    <div className={`rounded-3xl animate-pulse ${hero ? "bg-[#0B1E33]/80 p-6" : "bg-white dark:bg-gray-900 p-5 shadow-sm dark:border dark:border-gray-800"}`}>
+      <div className={`h-3 w-20 rounded mb-3 ${hero ? "bg-white/20" : "bg-gray-200 dark:bg-gray-700"}`}></div>
+      <div className={`h-7 w-12 rounded ${hero ? "bg-white/20" : "bg-gray-200 dark:bg-gray-700"}`}></div>
     </div>
   )
 }
 
 function GrafikSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800 animate-pulse">
+    <div className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm dark:border dark:border-gray-800 animate-pulse">
       <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
       <div className="h-[260px] bg-gray-100 dark:bg-gray-800 rounded-xl"></div>
     </div>
@@ -148,6 +148,16 @@ function TooltipModernBertumpuk({ active, payload, label }) {
           {p.dataKey}: {p.value} unit
         </p>
       ))}
+    </div>
+  )
+}
+
+// Badge ikon header gradasi — dipindah dari Dashboard.jsx supaya gaya header tiap panel
+// (Analisis Tren, Backlog, Evaluasi Kriteria, Detail per Unit) seragam dengan Dashboard.
+function IkonHeaderGrafik({ Icon, gradasi }) {
+  return (
+    <div className={`p-2 rounded-xl bg-gradient-to-br ${gradasi} shadow-md`}>
+      <Icon size={16} className="text-white" />
     </div>
   )
 }
@@ -607,23 +617,64 @@ function Evaluasi() {
     navigate(`/data?nomorUnit=${encodeURIComponent(nomorUnit)}`)
   }
 
+  // Kartu ringkasan sekarang mengikuti gaya Dashboard: "Tingkat Kepatuhan" jadi kartu hero
+  // navy gradient (setara "Total Unit" di Dashboard), sedangkan Aman/Mendekati/Sudah Lewat
+  // memakai warna lembut + lingkaran dekoratif — SAMA PERSIS dengan kartu Aman/Mendekati/
+  // Sudah Lewat di Dashboard, karena memang kategori yang sama.
   const kartuRingkasan = [
     {
+      key: "kepatuhan",
+      hero: true,
       label: "Tingkat Kepatuhan",
       nilai: kepatuhan.persentase,
       satuan: "%",
-      sub: "Rata-rata pemenuhan 7 kriteria checklist regulasi per unit",
+      icon: ShieldCheck,
       breakdown: [
         { label: "Jadwal", nilai: kepatuhan.persentaseJadwal },
         { label: "Petugas", nilai: kepatuhan.persentasePetugas },
         { label: "Tindak Lanjut", nilai: kepatuhan.persentaseTindakLanjut },
         { label: "Layak Penuh", nilai: kepatuhan.persentaseStatusKelayakan },
       ],
-      icon: ShieldCheck, warna: "text-blue-600 dark:text-blue-400", aksen: "from-blue-400 to-blue-600", bgIkon: "bg-gradient-to-br from-blue-400 to-blue-600"
     },
-    { label: "Aman", nilai: kepatuhan.aman, satuan: "", sub: null, icon: CheckCircle2, warna: "text-green-600 dark:text-green-400", aksen: "from-green-400 to-emerald-600", bgIkon: "bg-gradient-to-br from-green-400 to-emerald-600" },
-    { label: "Mendekati Jatuh Tempo", nilai: kepatuhan.mendekati, satuan: "", sub: null, icon: AlertTriangle, warna: "text-yellow-600 dark:text-yellow-400", aksen: "from-yellow-400 to-amber-600", bgIkon: "bg-gradient-to-br from-yellow-400 to-amber-600" },
-    { label: "Sudah Lewat", nilai: kepatuhan.lewat, satuan: "", sub: null, icon: XCircle, warna: "text-red-600 dark:text-red-400", aksen: "from-red-400 to-rose-600", bgIkon: "bg-gradient-to-br from-red-400 to-rose-600" },
+    {
+      key: "aman",
+      label: "Aman",
+      nilai: kepatuhan.aman,
+      icon: CheckCircle2,
+      bgKartu: "bg-green-50 dark:bg-green-950/40",
+      border: "border border-green-100 dark:border-green-900/60",
+      bgIkon: "bg-green-100 dark:bg-green-900/50",
+      warnaIkon: "text-green-600 dark:text-green-400",
+      warnaNilai: "text-green-700 dark:text-green-400",
+      warnaLabel: "text-green-700/70 dark:text-green-400/70",
+      warnaDekor: "bg-green-400/10",
+    },
+    {
+      key: "mendekati",
+      label: "Mendekati Jatuh Tempo",
+      nilai: kepatuhan.mendekati,
+      icon: AlertTriangle,
+      bgKartu: "bg-amber-50 dark:bg-amber-950/40",
+      border: "border border-amber-100 dark:border-amber-900/60",
+      bgIkon: "bg-amber-100 dark:bg-amber-900/50",
+      warnaIkon: "text-amber-600 dark:text-amber-400",
+      warnaNilai: "text-amber-700 dark:text-amber-400",
+      warnaLabel: "text-amber-700/70 dark:text-amber-400/70",
+      warnaDekor: "bg-amber-400/10",
+    },
+    {
+      key: "lewat",
+      label: "Sudah Lewat",
+      nilai: kepatuhan.lewat,
+      icon: XCircle,
+      bgKartu: "bg-red-50 dark:bg-red-950/40",
+      border: "border border-red-100 dark:border-red-900/60",
+      bgIkon: "bg-red-100 dark:bg-red-900/50",
+      warnaIkon: "text-red-600 dark:text-red-400",
+      warnaNilai: "text-red-700 dark:text-red-400",
+      warnaLabel: "text-red-700/70 dark:text-red-400/70",
+      warnaDekor: "bg-red-400/10",
+    },
   ]
 
   const itemAktif = kriteriaAktif !== null && kriteriaAktif >= 0 ? checklistOtomatis[kriteriaAktif] : null
@@ -681,12 +732,12 @@ function Evaluasi() {
         </div>
       </div>
 
-      {/* ===== BLOK 1: RINGKASAN ===== */}
+      {/* ===== BLOK 1: RINGKASAN — gaya kartu disamakan dengan Dashboard ===== */}
       <LabelKelompokSection>Ringkasan Kepatuhan</LabelKelompokSection>
 
       {sedangMuat ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <KartuSkeleton />
+          <KartuSkeleton hero />
           <KartuSkeleton />
           <KartuSkeleton />
           <KartuSkeleton />
@@ -700,37 +751,62 @@ function Evaluasi() {
         >
           {kartuRingkasan.map((kartu) => {
             const Icon = kartu.icon
-            return (
-              <motion.div
-                key={kartu.label}
-                variants={varianKartu}
-                whileHover={{ scale: 1.03, boxShadow: "0px 12px 28px rgba(0,0,0,0.14)" }}
-                transition={{ duration: 0.2 }}
-                className="relative overflow-hidden bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:border dark:border-gray-800 flex items-start justify-between"
-              >
-                <div className={`absolute left-0 top-0 h-full w-1 bg-gradient-to-b ${kartu.aksen}`}></div>
-                <div className="pl-2">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{kartu.label}</p>
-                  <p className={`text-3xl font-extrabold tracking-tight ${kartu.warna}`}>
+
+            if (kartu.hero) {
+              return (
+                <motion.div
+                  key={kartu.key}
+                  variants={varianKartu}
+                  whileHover={{ scale: 1.03, boxShadow: "0px 16px 32px rgba(11,30,51,0.35)" }}
+                  transition={{ duration: 0.2 }}
+                  className="relative overflow-hidden bg-gradient-to-br from-[#0B1E33] to-[#1B3A5C] p-5 rounded-3xl shadow-lg shadow-[#0B1E33]/25 flex flex-col justify-between"
+                >
+                  <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-[#F2A93B]/10"></div>
+                  <div className="absolute -right-2 top-8 w-14 h-14 rounded-full bg-[#3B82C4]/10"></div>
+                  <div className="flex items-center justify-between relative">
+                    <p className="text-sm text-white/70">{kartu.label}</p>
+                    <div className="p-2 rounded-xl bg-white/10">
+                      <Icon size={18} className="text-[#F2A93B]" />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-extrabold tracking-tight text-white relative">
                     <AngkaCountUp nilai={kartu.nilai} />{kartu.satuan}
                   </p>
-                  {kartu.sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{kartu.sub}</p>}
                   {kartu.breakdown && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
+                    <div className="flex flex-wrap gap-1.5 mt-3 relative">
                       {kartu.breakdown.map((b) => (
                         <span
                           key={b.label}
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-white/80"
                         >
                           {b.label}: {b.nilai}%
                         </span>
                       ))}
                     </div>
                   )}
+                </motion.div>
+              )
+            }
+
+            return (
+              <motion.div
+                key={kartu.key}
+                variants={varianKartu}
+                whileHover={{ scale: 1.03, boxShadow: "0px 12px 28px rgba(0,0,0,0.08)" }}
+                transition={{ duration: 0.2 }}
+                className={`relative overflow-hidden ${kartu.bgKartu} ${kartu.border} p-5 rounded-3xl flex flex-col justify-between`}
+              >
+                <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full ${kartu.warnaDekor}`}></div>
+                <div className={`absolute -right-2 top-8 w-14 h-14 rounded-full ${kartu.warnaDekor}`}></div>
+                <div className="flex items-center justify-between relative">
+                  <p className={`text-sm ${kartu.warnaLabel}`}>{kartu.label}</p>
+                  <div className={`p-2 rounded-xl ${kartu.bgIkon}`}>
+                    <Icon size={16} className={kartu.warnaIkon} />
+                  </div>
                 </div>
-                <div className={`p-2.5 rounded-xl ${kartu.bgIkon} shadow-lg`}>
-                  <Icon size={20} className="text-white" />
-                </div>
+                <p className={`text-3xl font-extrabold tracking-tight relative ${kartu.warnaNilai}`}>
+                  <AngkaCountUp nilai={kartu.nilai} />
+                </p>
               </motion.div>
             )
           })}
@@ -752,11 +828,11 @@ function Evaluasi() {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.008, boxShadow: "0px 16px 32px rgba(0,0,0,0.1)" }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
+            className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm dark:border dark:border-gray-800"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp size={18} className="text-blue-500" />
+              <div className="flex items-center gap-3">
+                <IkonHeaderGrafik Icon={TrendingUp} gradasi="from-blue-400 to-blue-600" />
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Tren Status Kelayakan</h2>
               </div>
               <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
@@ -806,11 +882,11 @@ function Evaluasi() {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.008, boxShadow: "0px 16px 32px rgba(0,0,0,0.1)" }}
             transition={{ duration: 0.4, delay: 0.2 }}
-            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
+            className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm dark:border dark:border-gray-800"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <ClipboardList size={18} className="text-blue-500" />
+              <div className="flex items-center gap-3">
+                <IkonHeaderGrafik Icon={ClipboardList} gradasi="from-sky-400 to-sky-600" />
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Distribusi Temuan per Kelompok</h2>
               </div>
               <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
@@ -851,11 +927,11 @@ function Evaluasi() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.25 }}
-            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800 mb-6"
+            className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm dark:border dark:border-gray-800 mb-6"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <XCircle size={18} className="text-red-500" />
+              <div className="flex items-center gap-3">
+                <IkonHeaderGrafik Icon={XCircle} gradasi="from-red-400 to-rose-600" />
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Backlog Unit Sudah Lewat Jatuh Tempo</h2>
               </div>
               <span className="text-xs px-2 py-1 rounded-full bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 font-semibold">
@@ -895,10 +971,10 @@ function Evaluasi() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3 }}
-            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800 mb-6"
+            className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm dark:border dark:border-gray-800 mb-6"
           >
-            <div className="flex items-center gap-2 mb-1">
-              <ShieldCheck size={18} className="text-blue-500" />
+            <div className="flex items-center gap-3 mb-1">
+              <IkonHeaderGrafik Icon={ShieldCheck} gradasi="from-indigo-400 to-indigo-600" />
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Evaluasi Kriteria Kepatuhan</h2>
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
@@ -939,11 +1015,11 @@ function Evaluasi() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.35 }}
-            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm dark:border dark:border-gray-800"
+            className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm dark:border dark:border-gray-800"
           >
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <ListChecks size={18} className="text-blue-500" />
+              <div className="flex items-center gap-3">
+                <IkonHeaderGrafik Icon={ListChecks} gradasi="from-blue-400 to-blue-600" />
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Detail Evaluasi per Unit</h2>
               </div>
               <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
