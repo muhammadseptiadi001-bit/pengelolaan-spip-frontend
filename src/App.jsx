@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
@@ -51,6 +52,20 @@ function LoadingHalaman() {
   )
 }
 
+// Pembungkus tiap halaman lazy: ErrorBoundary di luar, Suspense di dalam.
+// Kalau chunk gagal dimuat (setelah auto-reload di atas juga tetap gagal),
+// pengguna akan lihat pesan "Halaman gagal dimuat" + tombol Muat Ulang —
+// bukan area konten kosong putih tanpa penjelasan.
+function HalamanLazy({ children }) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingHalaman />}>
+        {children}
+      </Suspense>
+    </ErrorBoundary>
+  )
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -62,73 +77,73 @@ function App() {
           <Route
             index
             element={
-              <Suspense fallback={<LoadingHalaman />}>
+              <HalamanLazy>
                 <Dashboard />
-              </Suspense>
+              </HalamanLazy>
             }
           />
           <Route
             path="input"
             element={
-              <Suspense fallback={<LoadingHalaman />}>
+              <HalamanLazy>
                 <InputData />
-              </Suspense>
+              </HalamanLazy>
             }
           />
           <Route
             path="data"
             element={
-              <Suspense fallback={<LoadingHalaman />}>
+              <HalamanLazy>
                 <DataSPIP />
-              </Suspense>
+              </HalamanLazy>
             }
           />
           <Route
             path="evaluasi"
             element={
-              <Suspense fallback={<LoadingHalaman />}>
+              <HalamanLazy>
                 <Evaluasi />
-              </Suspense>
+              </HalamanLazy>
             }
           />
           <Route
             path="riwayat"
             element={
-              <Suspense fallback={<LoadingHalaman />}>
+              <HalamanLazy>
                 <Riwayat />
-              </Suspense>
+              </HalamanLazy>
             }
           />
           <Route
             path="pemeliharaan"
             element={
-              <Suspense fallback={<LoadingHalaman />}>
+              <HalamanLazy>
                 <Pemeliharaan />
-              </Suspense>
+              </HalamanLazy>
             }
           />
           <Route
             path="pengamanan-instalasi"
             element={
-              <Suspense fallback={<LoadingHalaman />}>
+              <HalamanLazy>
                 <PengamananInstalasi />
-              </Suspense>
+              </HalamanLazy>
             }
           />
           <Route
             path="kompetensi-teknik"
             element={
-              <Suspense fallback={<LoadingHalaman />}>
+              <HalamanLazy>
                 <KompetensiTeknik />
-              </Suspense>
+              </HalamanLazy>
             }
           />
           <Route
             path="kajian-teknis"
             element={
-              <Suspense fallback={<LoadingHalaman />}>
+              <HalamanLazy>
                 <KajianTeknis />
-              </Suspense>
+              </HalamanLazy>
             }
           />
         </Route>
