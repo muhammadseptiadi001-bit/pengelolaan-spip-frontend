@@ -47,6 +47,14 @@ function warnaBadgeStatus(status) {
   return "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
 }
 
+// Badge untuk statusPersetujuan (alur Diajukan -> Menunggu KTT -> Disetujui Penuh),
+// terpisah dari statusKelayakan (hasil teknis Layak/Tidak Layak/dst).
+function warnaBadgePersetujuan(status) {
+  if (status === "Disetujui Penuh") return "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+  if (status === "Menunggu KTT") return "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400"
+  return "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+}
+
 function formatTanggalWaktu(tanggal) {
   return new Date(tanggal).toLocaleString("id-ID", {
     day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
@@ -743,6 +751,7 @@ function DataSPIP() {
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Sisa Waktu</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Waktu</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Kelayakan</th>
+                      <th className="py-2.5 px-3 min-w-[160px] text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Persetujuan</th>
                       <th className="py-2.5 px-3 min-w-[180px] text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Petugas</th>
                       <th className="py-2.5 px-3 min-w-[190px] text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status Kompetensi</th>
                       <th className="py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Temuan</th>
@@ -818,7 +827,7 @@ function DataSPIP() {
                   <tbody>
                     {daftarUnit.length === 0 ? (
                       <tr>
-                        <td colSpan="17" className="py-6 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan="18" className="py-6 text-center text-gray-500 dark:text-gray-400">
                           {sedangMuatData ? "Memuat data..." : "Tidak ada data yang cocok dengan filter."}
                         </td>
                       </tr>
@@ -862,6 +871,14 @@ function DataSPIP() {
                                   <option value="Layak Dengan Catatan">Layak Dengan Catatan</option>
                                 </select>
                               </div>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span
+                                className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${warnaBadgePersetujuan(unit.statusPersetujuan)}`}
+                                title={unit.catatanPenolakan ? `Ditolak oleh ${unit.ditolakOleh || "-"}: ${unit.catatanPenolakan}` : ""}
+                              >
+                                {unit.statusPersetujuan || "Diajukan"}
+                              </span>
                             </td>
                             <td className="py-2.5 px-3 min-w-[180px]">
                               <input
@@ -927,7 +944,7 @@ function DataSPIP() {
                                 >
                                   <Printer size={13} /> Cetak
                                 </motion.button>
-                                {unit.statusKelayakan === "Layak" && (
+                                {unit.statusKelayakan === "Layak" && unit.statusPersetujuan === "Disetujui Penuh" && (
                                   <motion.button
                                     whileHover={{ scale: 1.08 }}
                                     whileTap={{ scale: 0.95 }}

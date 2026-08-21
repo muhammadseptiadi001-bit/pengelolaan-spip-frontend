@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   UserCog,
   FileSearch,
+  ClipboardCheck,
 } from 'lucide-react'
 import { ambilUser, logout } from '../utils/auth'
 import { ambilTema, toggleTema } from '../utils/theme'
@@ -39,8 +40,14 @@ import logoEsdm from '../assets/logo-esdm.png'
 // SATU-SATUNYA bagian yang masih putih/theme-aware: sub-tab bar mobile (pill di bawah
 // top bar, muncul saat berada di dalam aspek dengan banyak sub-halaman) — belum diminta
 // untuk diubah, jadi dibiarkan seperti semula memakai AKTIF_GRADIENT (navy gradient).
+//
+// PERSETUJUAN (fitur baru): menu flat "Persetujuan" hanya muncul untuk user dengan
+// role "ko" atau "ktt" (diisi lewat AdminJS). Ditaruh sejajar dengan "Input SPIP",
+// bukan masuk ke salah satu grup 5 aspek, karena bukan bagian dari struktur regulasi
+// tsb — cuma antrian kerja approval.
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
+const MENU_PERSETUJUAN = { path: "/persetujuan", label: "Persetujuan", icon: ClipboardCheck }
 
 const GRUP_KELAYAKAN = {
   key: "aspek3",
@@ -409,6 +416,7 @@ function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = ambilUser()
+  const bisaMenyetujui = user?.role === "ko" || user?.role === "ktt"
   const [tema, setTemaState] = useState(ambilTema())
   const [menuTerbuka, setMenuTerbuka] = useState(false)
   const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true })
@@ -479,6 +487,22 @@ function Sidebar() {
             <FilePlus size={16} className="flex-shrink-0" />
             {MENU_TUNGGAL.label}
           </NavLink>
+
+          {bisaMenyetujui && (
+            <NavLink
+              to={MENU_PERSETUJUAN.path}
+              className={({ isActive }) =>
+                `relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  isActive
+                    ? "text-[#0B1E33] shadow-md shadow-[#F2A93B]/30 bg-gradient-to-r from-[#F2A93B] to-[#E0932A]"
+                    : "text-amber-300 bg-amber-400/10 border border-amber-400/20 hover:bg-amber-400/20 hover:translate-x-0.5"
+                }`
+              }
+            >
+              <ClipboardCheck size={16} className="flex-shrink-0" />
+              {MENU_PERSETUJUAN.label}
+            </NavLink>
+          )}
 
           <div className="h-px bg-white/10 my-2"></div>
 
@@ -634,6 +658,23 @@ function Sidebar() {
                 <FilePlus size={16} className="flex-shrink-0" />
                 {MENU_TUNGGAL.label}
               </NavLink>
+
+              {bisaMenyetujui && (
+                <NavLink
+                  to={MENU_PERSETUJUAN.path}
+                  onClick={tutupMenu}
+                  className={({ isActive }) =>
+                    `relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 mt-1.5 ${
+                      isActive
+                        ? "text-[#0B1E33] shadow-md shadow-[#F2A93B]/30 bg-gradient-to-r from-[#F2A93B] to-[#E0932A]"
+                        : "text-amber-300 bg-amber-400/10 border border-amber-400/20 hover:bg-amber-400/20"
+                    }`
+                  }
+                >
+                  <ClipboardCheck size={16} className="flex-shrink-0" />
+                  {MENU_PERSETUJUAN.label}
+                </NavLink>
+              )}
 
               <div className="h-px bg-white/10 my-3"></div>
 

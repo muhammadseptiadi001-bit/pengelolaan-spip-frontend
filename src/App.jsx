@@ -40,6 +40,7 @@ const Pemeliharaan = lazyDenganAutoReload(() => import('./pages/Pemeliharaan'))
 const PengamananInstalasi = lazyDenganAutoReload(() => import('./pages/PengamananInstalasi'))
 const KompetensiTeknik = lazyDenganAutoReload(() => import('./pages/KompetensiTeknik'))
 const KajianTeknis = lazyDenganAutoReload(() => import('./pages/KajianTeknis'))
+const Persetujuan = lazyDenganAutoReload(() => import('./pages/Persetujuan'))
 
 function LoadingHalaman() {
   return (
@@ -143,6 +144,14 @@ function App() {
             element={
               <HalamanLazy>
                 <KajianTeknis />
+              </HalamanLazy>
+            }
+          />
+          <Route
+            path="persetujuan"
+            element={
+              <HalamanLazy>
+                <Persetujuan />
               </HalamanLazy>
             }
           />
