@@ -1,5 +1,5 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
@@ -24,6 +24,8 @@ import {
 } from 'lucide-react'
 import { ambilUser, logout } from '../utils/auth'
 import { ambilTema, toggleTema } from '../utils/theme'
+import { API_URL } from '../utils/spipHelpers'
+import { apiFetch } from '../utils/apiFetch'
 import logoEsdm from '../assets/logo-esdm.png'
 
 // ===== STRUKTUR MENU BERDASARKAN 5 ASPEK TUGAS & TANGGUNG JAWAB KO =====
@@ -45,6 +47,13 @@ import logoEsdm from '../assets/logo-esdm.png'
 // role "ko" atau "ktt" (diisi lewat AdminJS). Ditaruh sejajar dengan "Input SPIP",
 // bukan masuk ke salah satu grup 5 aspek, karena bukan bagian dari struktur regulasi
 // tsb — cuma antrian kerja approval.
+//
+// BADGE JUMLAH PERSETUJUAN (fitur baru): untuk user KO/KTT, jumlah unit yang sedang
+// menunggu persetujuan mereka ditampilkan sebagai badge angka merah di sebelah label
+// menu "Persetujuan" (desktop + sheet mobile), plus titik merah kecil di tombol
+// hamburger mobile supaya tetap terlihat walau sheet menu belum dibuka. Dihitung dari
+// panjang array hasil GET /api/unit/persetujuan (tidak perlu endpoint baru), di-refresh
+// otomatis tiap 30 detik dan setiap kali pindah halaman.
 
 const MENU_TUNGGAL = { path: "/input", label: "Input SPIP", icon: FilePlus }
 const MENU_PERSETUJUAN = { path: "/persetujuan", label: "Persetujuan", icon: ClipboardCheck }
@@ -148,6 +157,18 @@ function grupAktif(grup, pathname) {
 
 export function cariGrupUntukSubTab(pathname) {
   return ASPEK_TAB_MOBILE.find((grup) => grup.items.length > 1 && grupAktif(grup, pathname))
+}
+
+// ===== BADGE JUMLAH — dipakai di menu "Persetujuan" desktop & mobile. Tidak render
+// apa-apa kalau jumlah 0 atau kosong, supaya tidak mengganggu tampilan saat tidak ada
+// yang perlu ditindaklanjuti. =====
+function BadgeJumlah({ jumlah }) {
+  if (!jumlah || jumlah <= 0) return null
+  return (
+    <span className="ml-auto flex-shrink-0 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-sm shadow-red-500/40">
+      {jumlah > 99 ? "99+" : jumlah}
+    </span>
+  )
 }
 
 // ===== INDIKATOR ITEM AKTIF (sliding pill) — SIDEBAR DESKTOP =====
@@ -421,6 +442,7 @@ function Sidebar() {
   const [menuTerbuka, setMenuTerbuka] = useState(false)
   const [grupTerbuka, setGrupTerbuka] = useState({ aspek3: true })
   const [grupTerbukaMobile, setGrupTerbukaMobile] = useState({ aspek3: true })
+  const [jumlahPersetujuan, setJumlahPersetujuan] = useState(0)
 
   function toggleGrup(key) {
     setGrupTerbuka((sebelumnya) => ({ ...sebelumnya, [key]: !sebelumnya[key] }))
@@ -443,6 +465,37 @@ function Sidebar() {
   function tutupMenu() {
     setMenuTerbuka(false)
   }
+
+  // Ambil jumlah unit yang menunggu persetujuan KO/KTT, untuk ditampilkan sebagai badge.
+  // Hanya berjalan untuk user dengan role "ko"/"ktt". Refresh otomatis tiap 30 detik
+  // dan setiap kali pindah halaman, supaya angkanya selalu terkini (mis. setelah unit
+  // baru diinput, atau setelah unit sudah diproses).
+  useEffect(() => {
+    if (!bisaMenyetujui) return
+
+    let dibatalkan = false
+
+    async function ambilJumlahPersetujuan() {
+      try {
+        const res = await apiFetch(`${API_URL}/persetujuan`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (!dibatalkan) {
+          setJumlahPersetujuan(Array.isArray(data) ? data.length : 0)
+        }
+      } catch (err) {
+        console.error("Gagal mengambil jumlah persetujuan:", err)
+      }
+    }
+
+    ambilJumlahPersetujuan()
+    const interval = setInterval(ambilJumlahPersetujuan, 30000)
+
+    return () => {
+      dibatalkan = true
+      clearInterval(interval)
+    }
+  }, [bisaMenyetujui, location.pathname])
 
   const grupSubTab = cariGrupUntukSubTab(location.pathname)
 
@@ -501,6 +554,7 @@ function Sidebar() {
             >
               <ClipboardCheck size={16} className="flex-shrink-0" />
               {MENU_PERSETUJUAN.label}
+              <BadgeJumlah jumlah={jumlahPersetujuan} />
             </NavLink>
           )}
 
@@ -562,9 +616,12 @@ function Sidebar() {
         <button
           onClick={() => setMenuTerbuka(true)}
           aria-label="Buka menu"
-          className="p-2 -mr-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-amber-300"
+          className="relative p-2 -mr-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-amber-300"
         >
           <Menu size={20} />
+          {bisaMenyetujui && jumlahPersetujuan > 0 && (
+            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-[#0B1E33]"></span>
+          )}
         </button>
       </div>
 
@@ -673,6 +730,7 @@ function Sidebar() {
                 >
                   <ClipboardCheck size={16} className="flex-shrink-0" />
                   {MENU_PERSETUJUAN.label}
+                  <BadgeJumlah jumlah={jumlahPersetujuan} />
                 </NavLink>
               )}
 
