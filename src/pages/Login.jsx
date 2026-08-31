@@ -26,7 +26,7 @@ function Login() {
     setLoading(true)
 
     try {
-      const res = await fetch("https://pengelolaan-spip-backend-production.up.railway.app/api/login", {
+      const res = await fetch("https://pengelolaan-spip-backend-production-4d02.up.railway.app/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

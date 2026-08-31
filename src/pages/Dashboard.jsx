@@ -123,7 +123,7 @@ function Dashboard() {
     setSedangKirim(true)
     setStatusKirim("")
     try {
-      const res = await apiFetch("https://pengelolaan-spip-backend-production.up.railway.app/api/kirim-notifikasi", { method: "POST" })
+      const res = await apiFetch("https://pengelolaan-spip-backend-production-4d02.up.railway.app/api/kirim-notifikasi", { method: "POST" })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Gagal mengirim")
       setStatusKirim(data.pesan)
