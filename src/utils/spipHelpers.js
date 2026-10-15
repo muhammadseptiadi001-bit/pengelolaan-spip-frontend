@@ -1,5 +1,5 @@
-export const API_URL = "https://pengelolaan-spip-backend-production-4d02.up.railway.app/api/unit"
-export const UPLOAD_URL = "https://pengelolaan-spip-backend-production-4d02.up.railway.app/api/upload"
+export const API_URL = "http://localhost:3000/api/unit"
+export const UPLOAD_URL = "http://localhost:3000/api/upload"
 
 export const PILIHAN_JANGKA_WAKTU = [
   { label: "5 Tahun", bulan: 60 },
